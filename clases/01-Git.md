@@ -44,6 +44,10 @@ git config --global color.ui "auto"
 git config --global github.user "Usuario_GitHub"
 ```
 
+Las instrucciones anteriores implementan la configuración de manera *global* en su computadora; si requieren que la
+configuración sea *local* (en relación al directorio/repositorio `git`), las instrucciones anteriores
+deben adaptarse.
+
 ---
 # Flujo de trabajo
 
