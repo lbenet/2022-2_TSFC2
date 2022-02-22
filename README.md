@@ -11,7 +11,7 @@ Julián Ramírez Castro
 [Facultad de Ciencias, UNAM](http://www.fciencias.unam.mx)
 
 
-*Lunes y miércoles: 9:00-10:30*
+*Lunes y jueves: 10:00-11:30*
 
 
 ---
