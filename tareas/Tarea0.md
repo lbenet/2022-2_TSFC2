@@ -2,10 +2,11 @@
 
 ## Temas Selectos de Física Computacional 2 (2022-2)
 
-La idea de esta tarea es que todos tengamos la parte de instalación de cómputo lista, y que ésta sea esencialmente equivalente.
+La idea de esta tarea es que todos tengamos la parte de instalación de cómputo lista, y que ésta sea esencialmente equivalente para todas y todos.
 
 ### 1. Markdown
-Este archivo (`Tarea0.md`) está escrito en Markdown, por eso la extensión `.md`. Hay muchas guías para aprender a usar Markdown, todas más o menos equivalentes y cortas. Este ejercicio consiste en leer una de ellas, por ejemplo, [Markdown guide](https://www.markdownguide.org/getting-started/).
+
+Este archivo (`Tarea0.md`) está escrito en Markdown, por eso la extensión `.md`. Hay muchas guías para aprender a usar Markdown, todas más o menos equivalentes y cortas. Este ejercicio consiste siplemente en leer una de ellas, por ejemplo, [Markdown guide](https://www.markdownguide.org/getting-started/).
 
 ### 2. Julia
 
