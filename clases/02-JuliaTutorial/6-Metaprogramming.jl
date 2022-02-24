@@ -14,7 +14,7 @@
 
 #-
 # Cualquier línea de código inicialmente es una cadena:
-prog = "1 + 1"
+prog = "1 + 1" # <CTRL> + <RETURN> si utilizan VSCode
 
 # El siguiente paso es convertir la cadena en una expresión:
 ex1 = Meta.parse(prog)
@@ -63,7 +63,7 @@ Symbol(:var,'_',"sym",3)
 
 # Otro uso de `:` es crear expresiones sin usar el constructor `Expr`, en lo que
 # se llama *citar* (en inglés, *quoting*)
-ex4 = :(a+b*c+1)
+ex4 = :(a + b*c + 1)
 
 #-
 dump(ex4)
