@@ -143,7 +143,7 @@ eval(w3)
 #-
 W_3(2.1)
 
-# Uno puede *automatizar la generación de código. Tomando el ejemplo de los
+# Uno puede *automatizar* la generación de código. Tomando el ejemplo de los
 # polinomios de Wilkinson podemos, dentro de un ciclo `for`, generar varios
 # de éstos.
 
