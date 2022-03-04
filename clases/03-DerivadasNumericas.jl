@@ -2,6 +2,7 @@
 
 #-
 
+#Las siguientes línesa asumen que este archivo se ejecute desde la carpeta `clases` del curso
 using Pkg
 Pkg.activate("../")
 
@@ -34,7 +35,7 @@ Pkg.activate("../")
 # Como bien sabemos del curso de cálculo, la derivada se define como:
 #
 # ```math
-# f^\prime(x0) = \frac{{\rm d}f}{{\rm d}x}(x_0) \equiv \lim_{h\to 0}
+# f^\prime(x_0) = \frac{{\rm d}f}{{\rm d}x}(x_0) \equiv \lim_{h\to 0}
 # \frac{f(x_0+h)-f(x_0)}{h}.
 # ```
 #
@@ -76,6 +77,7 @@ derivada_derecha(f, x0, h) = (f(x0 + h) - f(x0)) / h
 # respecto al valor *exacto* de la derivada, usando $f(x) = 3x^3-2$ en $x_0=1$.
 
 f(x) = 3x^3-2
+
 f′(x) = 9x^2
 
 #-
@@ -91,7 +93,7 @@ derivada_derecha(f, 1.0, 0.1)
 errorabs_dd(f, f′, 1.0, 0.1)
 
 #-
-errs_dd = [errorabs_dd(f, f′, 1.0, 1/10^i) for i=1:15]
+errs_dd = [ errorabs_dd(f, f′, 1.0, 1/10^i) for i=1:15 ]
 
 #-
 findmin(errs_dd)
@@ -124,7 +126,7 @@ derivada_derecha(f, 1.0, 1.0e-8)
 Evalúa la derivada de ``f`` en ``x0`` usando diferencias finitas con el
 incremento simétrico.
 """
-derivada_simétrica(f, x0, h) = (f(x0 + h) - f(x0-h)) / (2h)
+derivada_simétrica(f, x0, h) = (f(x0 + h) - f(x0 - h)) / (2h)
 
 #-
 errorabs_ds(f, f′, x0, h) = abs(f′(x0) - derivada_simétrica(f, x0, h))
@@ -144,7 +146,8 @@ derivada_simétrica(f, 1.0, 1.0e-6)
 # en el sentido de que el error absoluto es menor (en 3 órdenes de magnitud).
 
 #-
-# Los resultados anteriores se pueden entender analíticamente de la siguiente manera: si
+# Los resultados anteriores sobre la convergencia se pueden entender analíticamente
+# de la siguiente manera: si
 # usamos el desarrollo en series de Taylor de $f(x_0+h)$ y $f(x_0-h)$ tenemos
 #
 # ```math
@@ -156,10 +159,11 @@ derivada_simétrica(f, 1.0, 1.0e-6)
 # de donde obtenemos, para cada aproximación de la derivada,
 # ```math
 # \begin{align*}
-# \frac{\Delta f_+}{\Delta x} & = f^\prime(x_0) + \frac{h}{2}f^{\prime\prime}(x_0),\\
+# \frac{\Delta f_+}{\Delta x} & = f^\prime(x_0) + \mathcal{O}(h),\\
 # \frac{\Delta f_\textrm{sym}}{\Delta x} & = f^\prime(x_0) + \mathcal{O}(h^2).\\
 # \end{align*}
 # ```
+
 #-
 
 # Los resultados anteriores muestran que la aproximación de la derivada derecha tiene un error
@@ -168,10 +172,11 @@ derivada_simétrica(f, 1.0, 1.0e-6)
 # la derivada simétrica será mejor.
 
 #-
-# El hecho de que el *límite* no pueda ser simulado como uno quisiera está relacionado con que
+# El hecho de que el *límite* no pueda ser simulado como uno quisiera no está relacionado
+# con las propiedades de convergencia (en términos de $h$), sino está relacionado con que
 # el cálculo involucra números de punto flotante (y no números en $\mathbb{R}$) y que las
-# diferencias cuando involucran números muy cercanos, o las divisiones con números muy pequeños,
-# conllevan a la pérdida de precisión. Esto se conoce como
+# diferencias de números muy cercanos (como las que definen el numerados), o las divisiones
+# con números muy pequeños, conllevan la pérdida de precisión. Esto se conoce como
 # [cancelación catastrófica](https://en.wikipedia.org/wiki/Catastrophic_cancellation).
 
 #-
@@ -195,7 +200,7 @@ derivada_simétrica(f, 1.0, 1.0e-6)
 Evalúa la derivada de ``f`` en ``x0`` usando la definición basada en una evaluación
 compleja.
 """
-derivada_pasocomplejo(f, x0, h) = imag(f(complex(x0,h))/h)
+derivada_pasocomplejo(f, x0, h) = imag( f( complex(x0, h) )/h )
 
 #-
 errorabs_dc(f, f′, x0, h) = abs(f′(x0) - derivada_pasocomplejo(f, x0, h))
@@ -210,7 +215,8 @@ findmin(errs_dc)
 derivada_pasocomplejo(f, 1.0, 1.0e-9)
 
 #-
-# En este caso, observamos que obtenemos el resultado exacto, incluso para un valor de $h$ finito.
+# En este caso, observamos que obtenemos el resultado *numéricamente* exacto, incluso
+# para un valor de $h$ finito.
 
 #-
 # Repitiendo el análisis que hicimos antes, en este caso tenemos
@@ -226,3 +232,8 @@ derivada_pasocomplejo(f, 1.0, 1.0e-9)
 # incluye cancelaciones catastróficas (en la diferencia), por lo que para valores de $h$
 # suficientemente pequeños, el error de la aproximación queda escondida en el error
 # de redondeo.
+
+#-
+# Para más información sobre estos detalles ver
+# [esta liga](https://nhigham.com/2020/10/06/what-is-the-complex-step-approximation/)
+# y/o [este artículo](https://epubs.siam.org/doi/epdf/10.1137/S003614459631241X).
