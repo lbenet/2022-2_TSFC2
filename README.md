@@ -2,7 +2,7 @@
 
 ## Métodos numéricos avanzados de ecuaciones diferenciales ordinarias
 
-Semestre 2022-2, [grupo 8387](https://aulas-virtuales.cuaed.unam.mx/)
+Semestre 2022-2, [grupo 8380](https://aulas-virtuales.cuaed.unam.mx/)
 
 Luis Benet
 [Instituto de Ciencias Físicas, UNAM](https://www.fis.unam.mx)
