@@ -1,6 +1,6 @@
 # # Tarea 1
 #
-# Fecha *final* de aceptación del PR:
+# Fecha **final** de aceptación del PR: 21 de marzo
 #
 # ---
 
