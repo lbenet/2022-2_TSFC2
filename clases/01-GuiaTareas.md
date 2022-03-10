@@ -30,7 +30,7 @@ Una vez copiada la dirección de nuestro fork, iremos a la carpeta local (en nue
 ```
 git remote add forkjulian git@github.com:Julian-RC/2022-2_TSFC2.git
 ```
-que es `git remote add` + *alias del fork* + *link al fork*. Esta instrucción lo que hace es *definir* una abreviatura (*forkjulian*) a la dirección URL dónde está el fork del curso que hicimos.
+que es `git remote add` + *alias del fork* + *link al fork*. Esta instrucción lo que hace es *definir* una abreviatura (*forkjulian*) a la dirección URL dónde está el fork del curso que hicimos. Cabe destacar que como *alias del fork* podemos colocar cualquier nombre, siempre y cuando no exista ya un fork con este nombre.
 
 Para verificar que todo se hizo correctamente ejecutaremos:
 
