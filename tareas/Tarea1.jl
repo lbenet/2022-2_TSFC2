@@ -44,7 +44,7 @@
 # - Implementen las operaciones aritméticas `+`, `-`, `*`, `/` y `^`
 # siguiendo las [notas de clase](../clases/04-DifAutom.jl).
 # Estas operaciones deben incluir las operaciones aritméticas que
-# involucran un número cualquiera (`a :: Real`) y un `Dual`` (`b::Dual`),
+# involucran un número cualquiera (`a :: Real`) y un `Dual` (`b::Dual`),
 # o dos duales.
 
 #-

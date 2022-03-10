@@ -13,6 +13,8 @@ using .DifAutom
     @test Dual(1.0, big(2.0)) == Dual{BigFloat}(1.0, 2.0)
     @test typeof(Dual(1, 2)) == Dual{Float64}
     @test Dual(1, 2) == Dual{Float64}(1, 2)
+    @test typeof(Dual(1, 2//1)) == Dual{Rational{Int}}
+    @test Dual(1, 2//1) == Dual{Rational{Int}}(1, 2)
     @test typeof(Dual(1//1, 2//1)) == Dual{Rational{Int}}
     @test Dual(1//1, 2//1) == Dual{Rational{Int}}(1, 2)
     @test typeof(Dual(1//1, big(2)//1)) == Dual{Rational{BigInt}}
