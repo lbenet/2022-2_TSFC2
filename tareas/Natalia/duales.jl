@@ -232,7 +232,7 @@ export Dual, dual, inv, fun, der, isdual
 	# Atanh
 	
 	function atanh(U::Dual)
-		ATH = Dual(atanh(U.fun), U.der/sqrt(1-U.fun^2))
+		ATH = Dual(atanh(U.fun), U.der/(1-U.fun^2))
 		return ATH
 	end
 
