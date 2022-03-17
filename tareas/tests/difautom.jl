@@ -25,7 +25,7 @@ using .DifAutom
     @test Dual(big(1)) == Dual(big(1.0))
     @test Dual(big(1)) == big(1.0)
     @test !(Dual(1,2)==1)
-    
+    @test Dual(1, 2) != 1
 end
 
 a = Dual(1)
@@ -57,7 +57,7 @@ c = Dual(0.5, 0.5)
     b1 = b^2.5
     b2 = sqrt(b^5)
     @test fun(b1) ≈ fun(b2) && der(b1) ≈ der(b2)
-    # Mismo ejemplo que desarrollamos en clase
+    @test der(b^2.5) ≈ 2.5*fun(b)^1.5    # Mismo ejemplo que desarrollamos en clase
     let
         f(x) = (3x^2-8x+5)/(7x^3-1)
         u = dual(2//1)
