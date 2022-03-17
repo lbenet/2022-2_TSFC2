@@ -8,34 +8,33 @@ export Dual, dual, inv, fun, der, isdual
 	Dual.
 
 	Estructura paramétrica inmutable que define los duales, cuyos parámetros son subtipo de `Real`. 
-	La parte que identifica a f_0 se llama `fun`, y la correspondiente a f'_0 será 	`der` y estas son del tipo `T`. 
+	La parte que identifica a f_0 se llama `fun`, y la correspondiente a f'_0 será `der` y estas son del tipo `T`. 
 
 
 	"""
-	struct Dual{T <: Union{AbstractFloat,Rational}} 
+	struct Dual{T <:Real} 
 		
     	fun :: T
     	der :: T
 		
-    	#function Dual(fun::T, der::T) where {T<:Union{AbstractFloat,Rational}}
-			#return new{T}(fun, der)
-		#end
 	end
-
+	
 	function Dual(real::T) where {T<:Real}   
     		return Dual(real, 0)
     	end	
  		
-    	function Dual(fun::T, der::R) where{T<:Real, R<:Real} 
-	    	I,S,_= promote(fun, der, 1.0)
-      		return Dual(I,S)
+    	function Dual(f, d) 
+	    	ff, dd = promote(f, d)
+      		return Dual(ff,dd)
 	end 
-	function Dual(fun::T, der::T) where {T<:Real}   
+
+	function Dual(fun::T, der::T) where {T<:Integer}   
 		I, S, _ = promote(fun, der, 1.0)
 		return Dual(I, S)
 	end
+
 	function dual(z::T) where {T<:Real}
-		return Dual(z,1.0) 
+		return Dual(z,1//1) 
 	end
 
 	# fun
@@ -50,16 +49,6 @@ export Dual, dual, inv, fun, der, isdual
 		return U.der
 	end 
 
-	# isdual
- 
-	function isdual(U::Dual)
-		if U.der == 1 
-			return true 
-		else 
-			return false 
-		end 
-	end 
-
 
 	######## OPERACIONES ARITMÉTICAS ########
 	
@@ -70,11 +59,11 @@ export Dual, dual, inv, fun, der, isdual
 	end
 
 	function ==(U::Dual, x::Real)
-		return U.fun == x 
+		return U.fun == x && U.der == 0
 	end
 
 	function ==(x::Real,U::Dual)
-		return U.fun == x 
+		return U.fun == x && U.der == 0
 	end
 
 	# Suma
@@ -135,7 +124,8 @@ export Dual, dual, inv, fun, der, isdual
 	# División
 
 	function /(U::Dual, W::Dual) 
-		D = Dual(U.fun/W.fun, (U.der - (U.fun/W.fun)*W.der)/W.fun)					  
+		I = U.fun/W.fun
+		D = Dual(I, (U.der - I*W.der)/W.fun)					  
 		return D
 	end
 	function /(U::Dual, x::Real) 
@@ -148,7 +138,7 @@ export Dual, dual, inv, fun, der, isdual
     
 	#Potencia
 
-	function ^(U::Dual, n::Real)
+	function ^(U::Dual, n)
 		D = Dual(U.fun^n, n*U.fun^(n-1)*U.der)
 		return D
 	end
@@ -165,8 +155,8 @@ export Dual, dual, inv, fun, der, isdual
 	# Raíz 
 
 	function sqrt(U::Dual)
-		D = U^0.5
-		return D
+		S = Dual(sqrt(U.fun), U.der/(2*sqrt(U.fun))) 
+		return S
 	end 
 
 	# Exponencial
