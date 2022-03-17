@@ -24,6 +24,8 @@ using .DifAutom
     @test 1.0 == Dual(1)
     @test Dual(big(1)) == Dual(big(1.0))
     @test Dual(big(1)) == big(1.0)
+    @test !(Dual(1,2)==1)
+    
 end
 
 a = Dual(1)
@@ -49,7 +51,8 @@ c = Dual(0.5, 0.5)
     @test b^2 == Dual(4, 4)
     @test sqrt(Dual(4, 4)) == Dual(4,4)^0.5 == b
     @test c^2 == Dual(1/4, 1/2)
-    @test b^2.5 == Dual(sqrt(fun(b)^5), 2.5*fun(b)^1.5)
+    #@test b^2.5 == Dual(sqrt(fun(b)^5), 2.5*fun(b)^1.5)
+    @test fun(b^2.5) ≈ fun(Dual(sqrt(fun(b)^5), 2.5*fun(b)^1.5)) && der(b^2.5) ≈ der(Dual(sqrt(fun(b)^5), 2.5*fun(b)^1.5))
     # Aquí usamos ≈ (en lugar de ==) porque puede variar de implementación a implementación
     b1 = b^2.5
     b2 = sqrt(b^5)
@@ -84,7 +87,8 @@ end
     @test sinh(u) == Dual(sinh(fun(u)), cosh(fun(u))*der(u)) == Dual(3.6268604078470186, 3.7621956910836314)
     @test cosh(u) == Dual(cosh(fun(u)), sinh(fun(u))*der(u)) == Dual(3.7621956910836314, 3.6268604078470186)
     fu = tanh(u)
-    @test fu == Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u))
+    #@test fu == Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u))
+    @test fun(fu) ≈ fun(Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u))) && der(fu) ≈ der(Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u)))
     @test der(fu) ≈ 0.07065082485316443
     @test asinh(u) == Dual(asinh(fun(u)), der(u)/sqrt((fun(u))^2+1)) == Dual(1.4436354751788103, 0.4472135954999579)
     fu = acosh(u)
@@ -100,7 +104,8 @@ end
     # @test der(tan(u)) ≈ 6.85103764162952
     @test sinh(u) == Dual(sinh(fun(u)), cosh(fun(u))*der(u)) == Dual(1.1752011936438014, 3.0861612696304874)
     @test cosh(u) == Dual(cosh(fun(u)), sinh(fun(u))*der(u)) == Dual(1.5430806348152437, 2.3504023872876028)
-    @test tanh(u) == Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u)) == Dual(0.7615941559557649, 0.8399486832280523)
+    #@test tanh(u) == Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u)) == Dual(0.7615941559557649, 0.8399486832280523)
+    @test fun(tanh(u)) ≈ fun(Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u))) ≈ fun(Dual(0.7615941559557649, 0.8399486832280523)) && der(tanh(u)) ≈ der(Dual(tanh(fun(u)), (sech(fun(u)))^2*der(u))) ≈ der(Dual(0.7615941559557649, 0.8399486832280523))
     @test asinh(u) == Dual(asinh(fun(u)), der(u)/sqrt((fun(u))^2+1)) == Dual(0.881373587019543, 1.414213562373095)
 
     u = Dual(0.0, 2.0)
