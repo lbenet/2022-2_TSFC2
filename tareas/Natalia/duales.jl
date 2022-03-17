@@ -23,12 +23,12 @@ export Dual, dual, inv, fun, der, isdual
 	end
 
 	function Dual(real::T) where {T<:Real}   
-    	return Dual(real, 0)
-    end	
+    		return Dual(real, 0)
+    	end	
  		
-    function Dual(fun::T, der::R) where{T<:Real, R<:Real} 
-	    I,S,_= promote(fun, der, 1.0)
-      	return Dual(I,S)
+    	function Dual(fun::T, der::R) where{T<:Real, R<:Real} 
+	    	I,S,_= promote(fun, der, 1.0)
+      		return Dual(I,S)
 	end 
 	function Dual(fun::T, der::T) where {T<:Real}   
 		I, S, _ = promote(fun, der, 1.0)
@@ -221,7 +221,7 @@ export Dual, dual, inv, fun, der, isdual
 	# Tanh
 
 	function tanh(U::Dual)
-		TH = Dual(tanh(U.fun), U.der)
+		TH = Dual(tanh(U.fun), U.der/cosh(U.fun)^2)
 		return TH
 	end
 
