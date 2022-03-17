@@ -4,34 +4,20 @@ export Dual, dual, fun, der
 
 struct Dual{T<:Real}
 
-	fun::T   ### properties, field names or parameters
-	der::T
+	fun::T;   der::T   ### properties, field names or parameters
 	
-	function Dual(fun::T, der::T) where {T<:Union{AbstractFloat,Rational}}
-		return new{T}(fun, der)   ### Defining the Dual type
-	end
-end
+end   ### julia automatically creates a 'new' constructor
 
 	### Some methods
 
-function Dual(fun::T1, der::T2) where {T1<:Real, T2<:Real}   ### Promoting to Float64
-	fu, de = promote(fun, der)								   # or Rational
-	return Dual(fu, de)										   # bigs included
+function Dual(fun, der)   ### Promoting to Float64
+	fu, de = promote(fun, der)   # or Rational
+	return Dual(fu, de)   # bigs included
 end
 function Dual(fun::T, der::T) where {T<:Integer}   ### both integers case
 	fu, de, _ = promote(fun, der, 1.0)
 	return Dual(fu, de)
 end
-
-function Dual{Float64}(fun::T1, der::T2) where {T1<:Real, T2<:Real}   ### Explicit
-	return Dual(Float64(fun), der)										# types
-end
-function Dual{BigFloat}(fun::T1, der::T2) where {T1<:Real, T2<:Real}
-	return Dual(BigFloat(fun), der)
-end
-function Dual{Rational{Int}}(fun::T1, der::T2) where {T1<:Real, T2<:Real}
-	return Dual(Rational(fun), der)
-end   ### Like this, it would be missed the Rational{BigInt} case
 
 	### Some functions
 	
@@ -54,20 +40,14 @@ end
 	
 import Base: ==
 	function ==(D1::Dual, D2::Dual)   ### Dual(a,b) = Dual(c,d)  ⇒  a = c & b = d
-		if D1.fun == D2.fun && D1.der == D2.der
-			return true
-		end
+		return D1.fun == D2.fun && D1.der == D2.der
 	end
 	
-	function ==(D::Dual, x::Real)   ### Dual(a,b) = x  ⇒  a = x
-		if D.fun == x
-			return true
-		end
+	function ==(D::Dual, x::Real)   ### Dual(a,b) = x  ⇒  b = 0 & a = x
+		return D.fun == x && D.der == 0.0
 	end
-	function ==(x::Real, D::Dual)   ### x = Dual(a,b) ⇒  x = a
-		if x == D.fun
-			return true
-		end
+	function ==(x::Real, D::Dual)   ### x = Dual(a,b) ⇒  x = a & 0 = b
+		return x == D.fun && 0.0 == D.der
 	end
 
 import Base: +
@@ -116,7 +96,7 @@ import Base: *
 
 import Base: /
 	function /(D1::Dual, D2::Dual)   ### Dual(a,b)/Dual(c,d)  ⇒ Dual(a/c,(b-(a/c)d)/c)
-		return Dual(D1.fun/D2.fun, (D1.der-D1.fun/D2.fun*D2.der)/D2.fun)
+		return Dual(D1.fun/D2.fun, (D1.der-(D1.fun/D2.fun)*D2.der)/D2.fun)
 	end
 
 	function /(D::Dual, x::Real)   ### Dual(a,b)/x  ⇒  Dual(a/x,b/x)
@@ -131,7 +111,7 @@ import Base: ^
 		return Dual(D.fun^n, n*D.fun^(n-1)*D.der)
 	end
 import Base: inv
-	function inv(D::Dual)   ### inv(Dual(a,b))  ⇒  Dual(a,b)/1
+	function inv(D::Dual)   ### inv(Dual(a,b))  ⇒  1/Dual(a,b)
 		return 1/D
 	end
 
@@ -139,7 +119,77 @@ import Base: inv
 	
 import Base: sqrt
 	function sqrt(D::Dual)
-		return D^0.5
+		return Dual(sqrt(D.fun), 1/(2*sqrt(D.fun))*D.der)
+	end
+
+import Base: exp
+	function exp(D::Dual)
+		return Dual(exp(D.fun), D.der*exp(D.fun))
+	end
+
+import Base: log
+	function log(D::Dual)
+		return Dual(log(D.fun), D.der/D.fun)
+	end
+
+import Base: sin
+	function sin(D::Dual)
+		return Dual(sin(D.fun), cos(D.fun)*D.der)
+	end
+
+import Base: cos
+	function cos(D::Dual)
+		return Dual(cos(D.fun), -sin(D.fun)*D.der)
+	end
+
+import Base: tan
+	function tan(D::Dual)
+		return Dual(tan(D.fun), sec(D.fun)^2*D.der)
+	end
+
+import Base: asin
+	function asin(D::Dual)
+		return Dual(asin(D.fun), 1/sqrt(1-D.fun^2)*D.der)
+	end
+
+import Base: acos
+	function acos(D::Dual)
+		return Dual(acos(D.fun), -1/sqrt(1-D.fun^2)*D.der)
+	end
+
+import Base: atan
+	function atan(D::Dual)
+		return Dual(atan(D.fun), 1/(1+D.fun^2)*D.der)
+	end
+
+import Base: sinh
+	function sinh(D::Dual)
+		return Dual(sinh(D.fun), cosh(D.fun)*D.der)
+	end
+
+import Base: cosh
+	function cosh(D::Dual)
+		return Dual(cosh(D.fun), sinh(D.fun)*D.der)
+	end
+
+import Base: tanh
+	function tanh(D::Dual)
+		return Dual(tanh(D.fun), sech(D.fun)^2*D.der)
+	end
+
+import Base: asinh
+	function asinh(D::Dual)
+		return Dual(asinh(D.fun), 1/sqrt(D.fun^2+1)*D.der)
+	end
+
+import Base: acosh
+	function acosh(D::Dual)
+		return Dual(acosh(D.fun), 1/(sqrt(D.fun+1)*sqrt(D.fun-1))*D.der)
+	end
+
+import Base: atanh
+	function atanh(D::Dual)
+		return Dual(atanh(D.fun), 1/(1-D.fun^2)*D.der)
 	end
 
 end
