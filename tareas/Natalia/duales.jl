@@ -52,7 +52,7 @@ export Dual, dual, inv, fun, der, isdual
 
 	######## OPERACIONES ARITMÉTICAS ########
 	
-	# Igualdad doble 
+	# Igualdad 
 
 	function ==(U::Dual, W::Dual)
 		return U.fun == W.fun && U.der == W.der
