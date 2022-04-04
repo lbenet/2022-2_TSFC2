@@ -284,12 +284,12 @@
 # | $$p(x) = f(x) g(x)$$ | $$p_{[k]} = \sum_{j=0}^k f_{[j]} g_{[k-j]}$$ |
 # | $$d(x) = f(x) / g(x)$$ | $$d_{[k]} = \frac{1}{g_{[0]}}\Big( f_{[k]} - \sum_{j=0}^{k-1} d_{[j]} g_{[k-j]}\Big)$$ |
 # | $$P(x) = f(x)^\alpha$$ | $$P_{[k]} = \frac{1}{k f_{[0]}} \sum_{j=0}^{k-1} (\alpha(k-j)-j)f_{[k-j]}P_{[j]}$$ |
-# | $$P(x) = f(x)^2$$ | $$P_{[k]} = \begin{cases} 2 \sum\limits_{j=0}^{(k-1)/2} f_{[k]}f_{[k-j]}, & \textrm{k impar}\\ (f_{[k/2]})^2+ 2 \sum\limits_{j=0}^{(k-2)/2} f_{[k]}f_{[k-j]}, & \textrm{k par}\end{cases}$$ |
-# | $$P(x) = f(x)^{1/2}$$ | $$P_{[k]} = \begin{cases} \frac{1}{2 P_{[0]}} \Big( f_{[k]} - 2 \sum\limits_{j=0}^{(k-1)/2} f_{[k]}f_{[k-j]}\Big), & \textrm{k impar}\\ \frac{1}{2 P_{[0]}} \Big( f_{[k]} - (f_{[k/2]})^2 - 2 \sum\limits_{j=0}^{(k-2)/2} f_{[k]}f_{[k-j]}\Big), & \textrm{k par}\end{cases}$$ |
+# | $$P(x) = f(x)^2$$ | $$P_{[k]} = \begin{cases} 2 \sum\limits_{j=0}^{(k-1)/2} f_{[j]}f_{[k-j]}, & \textrm{k impar}\\ (f_{[k/2]})^2+ 2 \sum\limits_{j=0}^{(k-2)/2} f_{[j]}f_{[k-j]}, & \textrm{k par}\end{cases}$$ |
+# | $$P(x) = f(x)^{1/2}$$ | $$P_{[k]} = \begin{cases} \frac{1}{2 P_{[0]}} \Big( f_{[k]} - 2 \sum\limits_{j=0}^{(k-1)/2} P_{[j]}P_{[k-j]}\Big), & \textrm{k impar}\\ \frac{1}{2 P_{[0]}} \Big( f_{[k]} - (P_{[k/2]})^2 - 2 \sum\limits_{j=0}^{(k-2)/2} P_{[j]}P_{[k-j]}\Big), & \textrm{k par}\end{cases}$$ |
 # | $$E(x) = \exp(f(x))$$ | $$E_{[k]} = \frac{1}{k} \sum_{j=0}^{k-1} (k-j) f_{[k-j]} E_{[j]}$$ |
 # | $$L(x) = \log(f(x))$$ | $$L_{[k]} = \frac{1}{f_{[0]}} \Big( f_{[k]} - \frac{1}{k}\sum_{j=1}^{k-1} j f_{[k-j]} L_{[j]} \Big)$$ |
 # | $$\begin{align*}S(x) &= \sin(f(x))\\ \\ \\ C(x) &= \cos(f(x)) \end{align*}$$ | $$\begin{align*} S_{[k]} &= \frac{1}{k} \sum_{j=0}^{k-1} (k-j) f_{[k-j]} C_{[j]}\\ C_{[k]} &= -\frac{1}{k} \sum_{j=0}^{k-1} (k-j) f_{[k-j]} S_{[j]}\end{align*}$$ |
 # | $$\begin{align*}T(x) &= \tan(f(x))\\ P(x) &= {T(x)}^2 \end{align*}$$ | $$T_{[k]} = f_{[k]} + \frac{1}{k} \sum_{j=0}^{k-1} (k-j) f_{[k-j]} P_{[j]}$$ |
-# | $$\begin{align*}A(x) &= \arcsin(f(x))\\ R(x) &= \sqrt{1-{f(x)}^2}\end{align*}$$ | $$A_{[k]} = f_{[k]} + \frac{1}{\sqrt{1-{f_{[0]}}^2}} \Big( f_{[k]} - \sum_{j=0}^{k-1} j R_{[k-j]} A_{[j]} \Big)$$ |
-# | $$\begin{align*}A(x) &= \arctan(f(x))\\ R(x) &= 1+f(x)^2\end{align*}$$ | $$A_{[k]} = f_{[k]} + \frac{1}{1+{f_{[0]}}^2} \Big( f_{[k]} - \sum_{j=0}^{k-1} j R_{[k-j]} A_{[j]} \Big)$$ |
+# | $$\begin{align*}A(x) &= \arcsin(f(x))\\ R(x) &= \sqrt{1-{f(x)}^2}\end{align*}$$ | $$A_{[k]} = \frac{1}{\sqrt{1-{f_{[0]}}^2}} \Big( f_{[k]} - \sum_{j=0}^{k-1} j R_{[k-j]} A_{[j]} \Big)$$ |
+# | $$\begin{align*}A(x) &= \arctan(f(x))\\ R(x) &= 1+f(x)^2\end{align*}$$ | $$A_{[k]} = \frac{1}{1+{f_{[0]}}^2} \Big( f_{[k]} - \sum_{j=0}^{k-1} j R_{[k-j]} A_{[j]} \Big)$$ |
 
