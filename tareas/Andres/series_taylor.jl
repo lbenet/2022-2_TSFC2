@@ -275,6 +275,9 @@ import Base: asin
 		return Taylor(As)
 	end
 
+import Base: acos
+	acos(T::Taylor) = -asin(T::Taylor).+π/2
+
 import Base: atan
 	function atan(T::Taylor)
 		l = length(T.coefs)
