@@ -15,17 +15,17 @@ function Taylor(DT::Type, i::Int64)   ### Taylor([0, 1, 0, ..., 0])
 end
 Taylor(i::Int64) = Taylor(Float64, i)   # default type: Float64
 
-import Base: zero   ### return the 0 poly: Taylor([0, 0, 0, ...])
+import Base: zero   ### Taylor([0, 0, ..., 0])
 	zero(T::Taylor) = Taylor(zero(T.coefs))
 
-	import Base: one   ### return the 1 poly: Taylor([1, 0, 0, 0, ...])
+import Base: one   ### Taylor([1, 0, 0, ..., 0])
 	function one(T::Taylor)
 		O = zeros(length(T.coefs))
 		O[1] = 1
 		return Taylor(O)
 	end
 
-import Base: ≈
+import Base: ≈   ### T1ᵢ ≈ T2ᵢ for i={0, 1, ..., min(Order(T1), Order(T2))}
 	≈(T1::Taylor, T2::Taylor) = T1.coefs ≈ T2.coefs
 
 ### Taylor's arithmetic (and with constants)
@@ -50,12 +50,12 @@ import Base: +
 		return Taylor(T1.coefs[1:m]+T2.coefs[1:m])
 	end
 	function +(T::Taylor, n::Number)   ### with N = T[n, 0, 0, ..., 0ₖ]
-		l = length(T.coefs);   N = Taylor(zeros(l));   N.coefs[1] = n
-		return T + N
+		l = length(T.coefs);   zs = zeros(l);   zs[1] = n
+		return T + Taylor(zs)
 	end
 	function +(n::Number, T::Taylor)
-		l = length(T.coefs);   N = Taylor(zeros(l));   N.coefs[1] = n
-		return N + T
+		l = length(T.coefs);   zs = zeros(l);   zs[1] = n
+		return Taylor(zs) + T
 	end
 
 import Base: -
@@ -64,17 +64,17 @@ import Base: -
 		return Taylor(T1.coefs[1:m]-T2.coefs[1:m])
 	end
 	function -(T::Taylor, n::Number)   ### with N = T[n, 0, 0, ..., 0ₖ]
-		l = length(T.coefs);   N = Taylor(zeros(l));   N.coefs[1] = n
-		return T - N
+		l = length(T.coefs);   zs = zeros(l);   zs[1] = n
+		return T - Taylor(zs)
 	end
 	function -(n::Number, T::Taylor)
-		l = length(T.coefs);   N = Taylor(zeros(l));   N.coefs[1] = n
-		return N - T
+		l = length(T.coefs);   zs = zeros(l);   zs[1] = n
+		return Taylor(zs) - T
 	end
 	-(T::Taylor) = Taylor(-T.coefs)
 
-import Base: *   ### Check recursion formulas in notebook or book!
-	function *(T1::Taylor, T2::Taylor)   ### Check formula in notebook
+import Base: *
+	function *(T1::Taylor, T2::Taylor)   ### Check recurssion formulas in book
 		m = min(length(T1.coefs), length(T2.coefs))
 		T3 = zeros(promote(typeof(T1.coefs[1]), typeof(T2.coefs[1]))[1], m) # if Int
 		for k in 1:m
@@ -103,36 +103,34 @@ import Base: /
 		end
 		return Taylor(T3)
 	end
-	/(T::Taylor, n::Number) = Taylor(T.coefs ./ n)   ### T/n = T[T₀/n, ..., Tₖ/n]
-	function /(n::Number, T::Taylor)   ### n/T = T[1/T₀, 0/T₁, ..., 0/Tₖ]  
+	function /(n::Number, T::Taylor)   ### N/T with N = Taylor([n, 0, 0, ..., 0])
 		@assert T.coefs[1] != 0
 		l = length(T.coefs);   zs = zeros(l);   zs[1] = n
 		return Taylor(zs)/T
 	end
+	/(T::Taylor, n::Number) = Taylor(T.coefs ./ n)   ### T/n = T[T₀/n, ..., Tₖ/n]
+	
 
-### Another method
-
-import Base: inv
+import Base: inv   ### Another method
 	inv(T::Taylor) = 1/T
 
-### Taylor's functions   ### Check recursion formulas in notebook or book!
+### Taylor's functions
 
 import Base: ^
 	function ^(T::Taylor, r::Union{Float64, Int64})
+		l = length(T.coefs)
+		P = zeros(typeof(T.coefs[1]), l)
 		if r%1 == 0   ### Integer case (mathematically)
 			if r == 2   ### T^2 case
-				l = length(T.coefs)
-				P = zeros(typeof(T.coefs[1]), l)
 				P[1] = T.coefs[1]^2
 				for k in 2:l
+					Σ = 0
 					if k%2 == 0
-						Σ = 0
 						for j in 0:(k-2)/2
 							Σ += T.coefs[Int(j)+1]*T.coefs[k-Int(j)]
 						end
 						P[k] = 2Σ
 					else
-						Σ = 0
 						for j in 0:(k-3)/2
 							Σ += T.coefs[Int(j)+1]*T.coefs[k-Int(j)]
 						end
@@ -140,7 +138,7 @@ import Base: ^
 					end
 				end
 				return Taylor(P)
-			else   ### T^n  n∈{N\2}  case
+			else   ### T^n  n∈N  case
 				P = T
 				for p in 2:r
 					P = P*T   ### Doing the product r times
@@ -148,10 +146,8 @@ import Base: ^
 				return P
 			end
 		else   ### Rational case (mathematically)
-			@assert T.coefs[1] != 0
-			l = length(T.coefs)
-			P = zeros(l)
-			if r == 1/2   ### √T  case
+			if r == 1/2
+				@assert T.coefs[1] > 0
 				P[1] = sqrt(T.coefs[1])
 				for k in 2:l
 					if k%2 == 0
@@ -169,7 +165,8 @@ import Base: ^
 					end
 				end
 				return Taylor(P)
-			else   ### T^r  r∈{Q\(1/2)}  case
+			else
+				@assert T.coefs[1] != 0
 				P[1] = T.coefs[1]^r
 				for k in 2:l
 					Σ = 0
@@ -189,13 +186,12 @@ import Base: sqrt   ### Another method
 import Base: exp
 	function exp(T::Taylor)
 		l = length(T.coefs)
-		#E = zeros(l)
 		E2 = zeros(typeof(T.coefs[1]), l)   ### in case they are complex
 		E = float.(E2)   ### in case they are Complex{Int64}
 		E[1] = exp(T.coefs[1])
 		for k in 2:l
 			Σ = 0
-			for j in 0:k-2
+			for j in 0:k-1
 				Σ += (k-1-j)*T.coefs[k-j]*E[j+1]
 			end
 			E[k] = Σ/(k-1)
@@ -227,7 +223,7 @@ import Base: cos
 		S[1] = sin(T.coefs[1]);   C[1] = cos(T.coefs[1])
 		for k in 2:l
 			Σs = 0;   Σc = 0
-			for j in 0:k-1
+			for j in 0:k-2
 				Σs += (k-1-j)*T.coefs[k-j]*C[j+1]
 				Σc += (k-1-j)*T.coefs[k-j]*S[j+1]
 			end
