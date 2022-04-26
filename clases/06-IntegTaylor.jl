@@ -171,7 +171,7 @@
 # Es importante notar que para que la serie (geométrica) converja absolutamente se requiere que los
 # términos sucesivos satisfagan
 # ```math
-# \Big | \frac{ x_{[n]} \delta_t^n }{x_{[n+1]} \delta_t^{n+1}}\Big| = \frac{1}{|x_0 \delta_t|} < 1,
+# \Big | \frac{x_{[n+1]} \delta_t^{n+1}}{ x_{[n]} \delta_t^n }\Big| = |x_0 \delta_t| < 1,
 # ```
 #
 # lo que define el radio de convergencia de la serie. En otras palabras, el máximo valor que
@@ -298,7 +298,7 @@
 #-
 # Entonces, para hacer la suma consideramos primero el término $x_{[p-1]}$ y $x_{[p]}$, a partir
 # de los cuales construimos $\tilde{x}_{p-1} = x_{[p-1]} + h x_{[p]}$. Usando
-# $\tilde{x}_{p-1}$ y $\x_{[p-2]}$ obtenemos
+# $\tilde{x}_{p-1}$ y $\tilde{x}_{[p-2]}$ obtenemos
 # $\tilde{x}_{p-2} = x_{[p-2]} + h \tilde{x}_{p-1}$, y así
 # sucesivamente hasta tener $\tilde{x}_0=x(t_1)$, que es el resultado buscado.
 
