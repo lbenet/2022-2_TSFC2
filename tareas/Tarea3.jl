@@ -82,7 +82,14 @@
 # La función deberá devolver un vector con los tiempos calculados a cada paso de integración,
 # y un vector con la variable dependiente obtenida de la integración; noten que si estamos en
 # el caso vectorial, la salida que corresponde a los valores obtenidos de la variable dependiente
-# será un vector de vectores.
-# Esta función debe ser exportada por el módulo.
+# será un vector de vectores. Esta función debe ser exportada por el módulo.
+#
+# Un punto importante a notar es que el integrador debe evitar situaciones donde se tenga ciclos
+# infinitos, en particular, en el número de pasos de integración. Esto puede ocurrir
+# dado que el paso de integración es demasiado pequeño (y el tiempo final no se alcanza).
+# La manera de evitar esto puede ser imponiendo un número máximo de iteraciones (que el
+# usuario puede cambiar), o poniendo una cota ínfima para el paso de integración. La implementación
+# concreta se las deja a su criterio, pero los valores de default deben permitir que
+# el integrador pase los tests.
 
 #-
