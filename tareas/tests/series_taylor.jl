@@ -1,11 +1,3 @@
-#=
-using Test, Revise
-includet("zYo/series_taylor.jl")
-using .SeriesTaylor
-include("tareas/tests/series_taylor.jl")
-
-=#
-
 using Test
 
 # include("series_taylor.jl")
