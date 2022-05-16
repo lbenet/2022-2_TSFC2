@@ -1,6 +1,6 @@
 module SeriesTaylor
 
-export Taylor
+export Taylor, evaluar, integracion_taylor
 
 struct Taylor{T<:Number} <: Number
 	coefs::Vector{T}
@@ -290,5 +290,93 @@ import Base: atan
 		end
 		return Taylor(At)
 	end
+
+### Taylor applications
+
+function evaluar(T::Taylor, h::Real)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h) Export!
+	coefs = T.coefs
+	b₀ = coefs[end-1] + coefs[end]*h   ### Horner's algorithm
+	for c in 2:length(coefs)-1
+		b₀ = coefs[end-c] + b₀*h
+	end
+	return b₀
+end
+
+### Scalar case
+
+function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T}
+	l = length(t.coefs)   ### order
+	C = zeros(T, l)   ### T to assure same type
+	ts = t.coefs
+	C[1] = u.coefs[1]   ### x₀
+	for c in 2:l   ### till c-1 'cause we don't need evaluate higher orders
+		C[c] = f(Taylor(C[1:c-1]), p, Taylor(ts[1:c-1])).coefs[c-1]/(c-1)
+	end
+	return Taylor(C)
+end
+
+function paso_integracion(U, ϵ)
+	u = U.coefs
+	orden = length(u)-1
+	δₜ = (ϵ/abs(u[end]))^(1/orden)
+	δₜ₋₁ = (ϵ/abs(u[end-1]))^(1/(orden-1))
+	return min(δₜ, δₜ₋₁)*0.5
+end
+
+function paso_taylor(f, t::Taylor, u::Taylor, p, ϵ)
+	xₖ = coefs_taylor(f, t, u, p)
+	δ = paso_integracion(xₖ, ϵ)
+	return δ, xₖ
+end
+
+function integracion_taylor_f(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+	ts = [t₀];   xs = [x₀]
+	while ts[end] < tₖ
+		t = Taylor(T, order)+ts[end]
+		u = Taylor(T, order);   u.coefs[1] = xs[end]
+		δ, u = paso_taylor(f, t, u, p, ϵ);   mb = 1.e-10   ### mb: minimum bound t
+		nt = ts[end]+δ   ### nt: new t
+		if tₖ < nt
+			push!(xs, evaluar(u, tₖ-ts[end]))
+			push!(ts, tₖ)
+		elseif δ ≥ mb
+			push!(ts, nt)
+			push!(xs, evaluar(u, δ))
+		else
+			break
+		end
+	end
+	return ts, xs
+end
+
+function integracion_taylor_b(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+	ts = [t₀];   xs = [x₀]
+	while tₖ < ts[end]
+		t = Taylor(T, order)+ts[end]
+		u = Taylor(T, order);   u.coefs[1] = xs[end]
+		δ, u = paso_taylor(f, t, u, p, ϵ);   mb = 1.e-10   ### mb: minimum bound t
+		nt = ts[end]-δ   ### nt: new t
+		if nt < tₖ
+			push!(xs, evaluar(u, tₖ-ts[end]))
+			push!(ts, tₖ)
+		elseif δ ≥ mb
+			push!(ts, nt)
+			push!(xs, evaluar(u, -δ))
+		else
+			break
+		end
+	end
+	return ts, xs
+end
+	
+function integracion_taylor(f, x₀, t₀, tₖ, order, ϵ, p)
+	if t₀ < tₖ
+		return integracion_taylor_f(f, x₀, t₀, tₖ, order, ϵ, p)
+	else
+		return integracion_taylor_b(f, x₀, t₀, tₖ, order, ϵ, p)
+	end
+end
+
+### Vectorial case
 
 end
