@@ -2,12 +2,12 @@
 module SeriesTaylor
 
 import Base: ==, ≈, +, -, *, /, ^, one, zero, inv, sqrt, exp, log, sin, cos, tan, asin, acos, atan
-export Taylor
+export Taylor, evaluar
 
 	"""
 	Taylor.
-
-    Estructura paramétrica (`struct`) que define el tipo `Taylor{T}`, 
+	
+	Estructura paramétrica (`struct`) que define el tipo `Taylor{T}`, 
     donde el parámetro es un subtipo de `Number`. Además, el tipo `Taylor`
     es a su vez subtipo de `Number`. El campo básico de esta estructura
     es un vector `coefs` del tipo `Vector{T}`.
@@ -352,4 +352,29 @@ export Taylor
 	function sqrt(f::Taylor) 
 		return f^(1/2)
 	end 
+	#-----------------------------------------------------#
+
+	# TAREA 3
+
+	"""
+	evaluar. 
+
+	Evalua objetos del tipo `Taylor` en un valor específico, usando el método de Horner.
+	EL parámetro `fT::Taylor` es el desarrollo de Taylor de una función f(x)
+	alrededor del punto x₀. Como resultado no da evaluación numérica de f(x_0+h).
+
+	x(t₁)= x₀ + h(x₁ + h(... + h(xₚ₋₁ + hxₚ))...)
+
+	"""
+	function evaluar(fT::Taylor, h)
+		P = length(fT.coefs)  
+		xₚ₋₁ = fT.coefs[P-1]
+		xₚ = fT.coefs[P]
+		S₀ = xₚ₋₁ + h*xₚ
+		S = S₀ 
+		for k in P-2:-1:1 
+			S = fT.coefs[k] + h*S
+    	end
+    	return S
+	end
 end 
