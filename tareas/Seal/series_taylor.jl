@@ -24,39 +24,42 @@
 # - Definan constructores externos necesarios. En particular definan uno que
 #    a partir de un valor entero (`Int)` defina a la *variable independiente*.
 
+module SeriesTaylor
+export Taylor
+
 struct Taylor{T <: Number} <: Number
     coefs::Vector{T}
 end
-#
-function Taylor(a::Type, orden)
-    coef = zeros(a,orden)
-    coefs = insert!(coef, 2, 1)
-     return Taylor(coefs)
- end
- 
- Taylor(a=Int64) = Taylor(Float64,a)
-#-
-# ## 2:
-#
-# Extiendan los métodos para que las operaciones aritméticas básicas.
-#    (`+`, `-`, `*`, `/`) y la igualdad (`==`) puedan ser usadas tanto con valores
-#    numéricos como con objetos del tipo `Taylor`.
 
-#-
+function Taylor(a::Type, orden)
+   coef = zeros(a, orden+1)
+   coef[2] = one(a)
+    return Taylor(coef)
+end
+
+Taylor(a::Int64) = Taylor(Float64,a)
+
+##EXTRAS
+
+import Base.zero, Base.one, Base.≈
+
+zero(a::Taylor)= Taylor(zeros(typeof(a.coefs[1]),length(a.coefs)))
+≈(a::Taylor, b::Taylor)= a.coefs ≈ b.coefs
+one(a::Taylor)=  Taylor(pushfirst!(zeros(length(a.coefs)-1),1))
+
 import Base.==
 
 function ==(a::Taylor, b::Taylor)
-    if length(a.coefs)==length(b.coefs)
-        return a.coefs == b.coefs
-    else
-        return a.coefs == (a.coefs ∩ b.coefs) || b.coefs == (a.coefs ∩ b.coefs)
-    end
+   i = min(length(a.coefs),length(b.coefs))
+return a.coefs[1:i] == b.coefs[1:i]
 end
 
 ==(a::Taylor, b::Number)= a.coefs == Taylor(pushfirst!(zeros(length(a.coefs)-1),b)).coefs
 ==(a::Number, b::Taylor)= b.coefs == Taylor(pushfirst!(zeros(length(b.coefs)-1),a)).coefs
-#
-#
+==(a::Taylor{ComplexF64}, b::Taylor{Union{Int64,Float64}})= b.coefs == Taylor([real(a.coefs)]).coefs
+==(a::Taylor{Union{Int64,Float64}}, b::Taylor{ComplexF64})= a.coefs == Taylor([real(b.coefs)]).coefs
+
+
 import Base.+, Base.-
 
 +(a::Taylor, b::Taylor)= Taylor([a.coefs[i] + b.coefs[i] for i in 1:min(length(a.coefs),length(b.coefs))])
@@ -67,20 +70,21 @@ import Base.+, Base.-
 -(a::Taylor, b::Number)= a - Taylor(pushfirst!(zeros(length(a.coefs)-1),b)) 
 -(a::Number, b::Taylor)= b - Taylor(pushfirst!(zeros(length(b.coefs)-1),a)) 
 -(a::Taylor)= Taylor(-a.coefs)
-#
-#
+
+
 import Base .*, Base ./, Base.inv
 
 function *(a::Taylor, b::Taylor)
     i=min(length(a.coefs),length(b.coefs))
-    type= promote(typeof(a.coefs[1]), typeof(b.coefs[1]))[1]
-    coefs=type[]
+    type= promote_type(typeof(a.coefs[1]), typeof(b.coefs[1]))
+    coefs= zeros(type, i)
+
       for k in 1:i
-        sum=0
+        sum= zero(type)
             for j in 1:k
                 sum += a.coefs[j] * b.coefs[k-j+1]
             end
-     coefs=push!(coefs,sum)
+     coefs[k]= sum
       end
     return Taylor(coefs)
 end
@@ -92,15 +96,15 @@ function /(a::Taylor, b::Taylor)
      @assert b.coefs[1] != 0 
     
     i=min(length(a.coefs),length(b.coefs))
-    type= promote(typeof(a.coefs[1]), typeof(b.coefs[1]))[1]
-    coefs=type[]
+    type= promote_type(typeof(a.coefs[1]), typeof(b.coefs[1]))
+    coefs= zeros(type, i)
+
       for k in 1:i
-        sum=0
+        sum=zero(type)
             for j in 1:k-1
                 sum += coefs[j] * b.coefs[k-j+1]
             end
-        ks= 1/b.coefs[1] * (a.coefs[k] - sum)
-     coefs=push!(coefs,ks)
+        coefs[k]= 1/b.coefs[1] * (a.coefs[k] - sum)
       end
     return Taylor(coefs)
 end
@@ -117,169 +121,275 @@ function /(a::Number, b::Taylor)
 end
 
 inv(a::Taylor)= 1/a
-#
-#
+
 import Base .^
 
 function ^(a::Taylor, b::Float64)
 
-     if b==2
-    i= length(a.coefs)
-    #type= typeof(a.coefs[1])
-    coefs= Float64[a.coefs[1]^2]   ## coefs[1]= a.coefs^2
+    if b==2
 
+    i= length(a.coefs) 
+    type= typeof(a.coefs[1]^2)
+    coefs= zeros(type, i)
+    coefs[1]= a.coefs[1]^2
+    
             for k in 2:i
-               sum=0
-               if mod(k,2)==0
+               sum=zero(type)
+               if iseven(k)
                     for j in 0:(k-2)/2
                     sum += (a.coefs[j+1] * a.coefs[k-j])
                     end
-                ks= (a.coefs[k/2])^2 + 2*sum
-                coefs=push!(coefs,ks)
+                coefs[k]= (a.coefs[k/2])^2 + 2*sum 
 
                 else 
-                    for j in 0:(k-3)/2
+                    for j in 0:(k-1)/2
                     sum += 2*(a.coefs[j+1] * a.coefs[k-j])
                     end
-                coefs=push!(coefs,sum)
+                coefs[k]= sum
               end
            end
         return Taylor(coefs)
 
     elseif b==1/2
-    #@assert a.coefs[1] > 0
+    @assert a.coefs[1] != 0
     i= length(a.coefs)
-    #type= typeof(a.coefs[1])
-    coefs= Float64[sqrt(a.coefs[1])]   ## coefs[1]= a.coefs^2
+    type= typeof(sqrt(a.coefs[1]))
+    coefs= zeros(type, i) 
+    coefs[1]= sqrt(a.coefs[1])
+
             for k in 2:i
                 sum=0
-                if mod(k,2)==0
-                         for j in 0:(k-2)/2
-                         sum += coefs[Int(j+1)] * coefs[Int(k-j-1)]
+                if iseven(k)
+                         for j in 1:(k-1)/2
+                         sum += coefs[Int(j+1)] * coefs[Int(k-j)]
                          end
-                     ks= 1/(2 * coefs[1])*(a.coefs[Int(k)] - (coefs[Int(k/2)])^2 - 2*sum)
-                     coefs=push!(coefs,ks)
+                coefs[Int(k)]= (1/(2*coefs[1])) * (a.coefs[Int(k)] - 2*sum)
       
                  else 
-                          for j in 0:(k-1)/2
-                          sum += coefs[Int(j+1)] * coefs[Int(k-j-1)]
+                          for j in 1:(k-2)/2
+                          sum += coefs[Int(j+1)] * coefs[Int(k-j)]
                           end
-                      ks= 1/(2*coefs[1]) * (a.coefs[Int(k)] - 2*sum)
-                      coefs=push!(coefs,ks)
+                 coefs[Int(k)]= (1/(2 * coefs[1])) * (a.coefs[Int(k)] - (coefs[Int((k+1)/2)])^2 - 2*sum)
                 end
              end
         return Taylor(coefs)
 
     else
-    i= length(a.coefs)
-    #type= typeof(a.coefs[1])
-    coefs= Float64[a.coefs[1]^b]   ## coefs[1]= a.coefs^b    
+        if a.coefs[1] < 0
+            i= length(a.coefs)
+            type= typeof(Complex(a.coefs[1])^b)
+            coefs= zeros(type, i) 
+            coefs[1]= Complex(a.coefs[1])^b
+    
+            for k in 2:i
+                sum= 0
+                    for j in 0:k-1
+                        sum += (b*(k-j-1)-(j))*a.coefs[Int(k-j)]*coefs[Int(j+1)]
+                    end
+                coefs[Int(k)]= 1/((k-1) * a.coefs[1]) * sum
+            end
+             return Taylor(coefs)
+
+        else
+        i= length(a.coefs)
+        type= typeof((a.coefs[1])^b)
+        coefs= zeros(type, i) 
+        coefs[1]= (a.coefs[1])^b
 
         for k in 2:i
             sum= 0
-                for j in 1:k-1
-                    sum += (b*(k-j-1)-(j-1))*a.coefs[k-j]*coefs[j]
+                for j in 0:k-1
+                    sum += (b*(k-j-1)-(j))*a.coefs[Int(k-j)]*coefs[Int(j+1)]
                 end
-            ks= 1/((k-1) * a.coefs[1]) * sum
-            coefs= push!(coefs,ks)
+            coefs[Int(k)]= 1/((k-1) * a.coefs[1]) * sum
         end
-    return Taylor(coefs)
-
+         return Taylor(coefs)
+        end
     end
 end
-#
-#
-import Base.sqrt
+
+
+import Base.sqrt    ###CON EL CASO COMPLEJO
 function sqrt(a::Taylor)
+
+    if a==Taylor{ComplexF64}
+        return a^(1/2)
+
+    elseif  (a.coefs[1]) < 0
+    i= length(a.coefs)
+    type= typeof(sqrt(Complex(a.coefs[1])))
+    coefs= zeros(type, i) 
+    coefs[1]= sqrt(Complex(a.coefs[1]))
+
+            for k in 2:i
+                sum=0
+                if iseven(k)
+                         for j in 1:(k-1)/2
+                         sum += coefs[Int(j+1)] * coefs[Int(k-j)]
+                         end
+                coefs[Int(k)]= (1/(2*coefs[1])) * (a.coefs[Int(k)] - 2*sum)
+      
+                 else 
+                          for j in 1:(k-2)/2
+                          sum += coefs[Int(j+1)] * coefs[Int(k-j)]
+                          end
+                 coefs[Int(k)]= (1/(2 * coefs[1])) * (a.coefs[Int(k)] - (coefs[Int((k+1)/2)])^2 - 2*sum)
+                end
+             end
+        return Taylor(coefs)
+
+    else
     return a^(1/2)
+    end
+
 end
-# ## 3:
-#
-# Para  las funciones elementales que están [en la tabla vista en clase](../clases/05-SeriesTaylor.jl),
-# implementen los métodos adecuados para esas funciones puedan usarse
-# con objetos del tipo `Taylor`.
-#
-import Base.exp, Base.log, Base .≈, Base.one
+
+
+
+import Base.exp, Base.log
 
 function exp(a::Taylor)
     i= length(a.coefs)
-   #type= typeof(a.coefs[2])
-    coefs= Float64[exp(a.coefs[1])]
+    type= typeof(exp(a.coefs[1]))
+    coefs= zeros(type, i) 
+    coefs[1]= exp(a.coefs[1])
+
         for k in 2:i
-            sum=0
+            sum= zero(type)
                 for j in 1:k-1
                 sum += (k-j)*a.coefs[k-j+1]*coefs[j]
                 end
-             ks= 1/(k-1) * sum
-            coefs=push!(coefs,ks)
+            coefs[k]= 1/(k-1) * sum
         end
     return Taylor(coefs)
 end
 
-function log(a::Taylor{<:ComplexF64})
+function log(a::Taylor)
+    if a.coefs[1] < 0
     i= length(a.coefs)
-    #type= typeof(a.coefs[2])
-     coefs= Float64[log(a.coefs[1])]
-     @assert a.coefs[1] > 0
+    type= typeof(log(Complex(a.coefs[1])))
+    coefs= zeros(type, i) 
+    coefs[1]= log(Complex(a.coefs[1]))
+
          for k in 2:i
-             sum=0
+             sum= zero(type)
                  for j in 1:k-1
                  sum += (j-1)*a.coefs[k-j+1]*coefs[j]
                  end
-              ks= (a.coefs[k] - 1/(k-1)*sum)/a.coefs[1]
-             coefs=push!(coefs,ks)
+            coefs[k]= (a.coefs[k] - 1/(k-1)*sum)/a.coefs[1]
          end
      return Taylor(coefs)
-    end
-    
-    ≈(a::Taylor, b::Taylor)= a.coefs ≈ b.coefs
-    one(a::Taylor)=  Taylor(pushfirst!(zeros(length(a.coefs)-1),1))
 
-#
-#
+        else
+            i= length(a.coefs)
+            type= typeof(log(a.coefs[1]))
+            coefs= zeros(type, i) 
+            coefs[1]= log(a.coefs[1])
+             @assert a.coefs[1] != 0
+        
+                 for k in 2:i
+                     sum= zero(type)
+                         for j in 1:k-1
+                         sum += (j-1)*a.coefs[k-j+1]*coefs[j]
+                         end
+                    coefs[k]= (a.coefs[k] - 1/(k-1)*sum)/a.coefs[1]
+                 end
+             return Taylor(coefs)
+    end
+end
+
+
+
+
 import Base.sin, Base.cos, Base.tan
 
-function sin(a::Taylor)
+function sin_and_cos(a::Taylor)
+
     i= length(a.coefs)
-    coefs= Float64[sin(a.coefs[1])]
+    type1= typeof(sin(a.coefs[1]))
+    type2= typeof(cos(a.coefs[1]))
+
+    S= zeros(type1,i)
+    S[1]= sin(a.coefs[1])
+
+    C= zeros(type2,i)
+    C[1]= cos(a.coefs[1])
+
         for k in 2:i
-            sum=0
-                for j in 1:k-1
-                sum += (k-j)*a.coefs[k-j]*coefs[j]
+            sum_seno= 0; sum_coseno=0
+                for j in 0:k-1
+                sum_seno += (k-j-1)*a.coefs[k-j] * C[j+1]
+                sum_coseno += (k-j-1)*a.coefs[k-j] * S[j+1]
                 end
-             ks= 1/(k-1) * sum
-            coefs=push!(coefs,ks)
+            S[k]= 1/(k-1) * sum_seno;
+            C[k]= -1/(k-1) * sum_coseno
         end
-    return Taylor(coefs)
+    return S,C
 end
 
+
+function sin(a::Taylor)
+   return Taylor(sin_and_cos(a)[1])
+end
 
 function cos(a::Taylor)
-    i= length(a.coefs)
-    coefs= Float64[cos(a.coefs[1])]
-    for k in 2:i
-        sum=0
-            for j in 1:k-1
-            sum += (k-j)*a.coefs[k-j]*coefs[j]
-            end
-         ks= -1/(k-1) * sum
-        coefs=push!(coefs,ks)
-    end
-return Taylor(coefs)
-end
+    return Taylor(sin_and_cos(a)[2])
+ end
 
 function tan(a::Taylor)
     i= length(a.coefs)
-    coefs= Float64[tan(a.coefs[1])]
+    type= typeof(tan(a.coefs[1]))
+    coefs= zeros(type,i)
+    coefs[1]= tan(a.coefs[1])
+  
         for k in 2:i
-            sum=0
-                for j in 1:k-1
-                sum += (k-j-1)*a.coefs[k-j+1]*coefs[j]
+            P= Taylor(coefs)^2
+            sum= zero(type)
+                for j in 0:k-1
+                sum += (k-j-1)*a.coefs[k-j]*(P.coefs[j+1])
                 end
-             ks= a.coefs[k-1] + 1/(k-1) * sum
-            coefs=push!(coefs,ks)
+            coefs[k]= a.coefs[k] + 1/(k-1) * sum
         end
     return Taylor(coefs)
+end
+
+
+
+
+import Base.asin, Base.acos, Base.atan
+
+function asin(a::Taylor)
+    i= length(a.coefs)
+    type= typeof(asin(a.coefs[1]))
+    coefs= zeros(type,i)
+    coefs[1]= asin(a.coefs[1])
+        for k in 2:i
+        R= sqrt(1-a^2)
+        sum= zero(type)
+            for j in 1:k-1
+            sum += j*R.coefs[k-j]*coefs[j+1]
+            end
+        coefs[k]= (a.coefs[k]- sum/(k-1))/sqrt(1-(a.coefs[1])^2)
+        end
+    return Taylor(coefs)
+end
+
+function atan(a::Taylor)
+    i= length(a.coefs)
+    type= typeof(atan(a.coefs[1]))
+    coefs= zeros(type,i)
+    coefs[1]= atan(a.coefs[1])
+        for k in 2:i
+        R= (1+a^2)
+        sum= zero(type)
+            for j in 1:k-1
+            sum += j*R.coefs[k-j]*coefs[j+1]
+            end
+        coefs[k]= (a.coefs[k]- sum/(k-1))/(1+(a.coefs[1])^2)
+        end
+    return Taylor(coefs)
+end
+
 end
 
 
