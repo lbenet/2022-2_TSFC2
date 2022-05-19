@@ -2,7 +2,7 @@
 module SeriesTaylor
 
 import Base: ==, ≈, +, -, *, /, ^, one, zero, inv, sqrt, exp, log, sin, cos, tan, asin, acos, atan
-export Taylor, evaluar
+export Taylor, evaluar, coefs_taylor, paso_integracion
 
 	"""
 	Taylor.
@@ -361,7 +361,7 @@ export Taylor, evaluar
 
 	Evalua objetos del tipo `Taylor` en un valor específico, usando el método de Horner.
 	EL parámetro `fT::Taylor` es el desarrollo de Taylor de una función f(x)
-	alrededor del punto x₀. Como resultado no da evaluación numérica de f(x_0+h).
+	alrededor del punto x₀. Como resultado no da evaluación numérica de f(x₀+h).
 
 	x(t₁)= x₀ + h(x₁ + h(... + h(xₚ₋₁ + hxₚ))...)
 
@@ -377,4 +377,22 @@ export Taylor, evaluar
     	end
     	return S
 	end
+	function coefs_taylor(f, t::Taylor, u::Taylor, p)
+		P = length(u.coefs)
+		u₀ = u.coefs[1]
+		t = t.coefs
+		U = [u₀]
+		for k in 1:P-1
+			append!(U,f(Taylor(U), p, Taylor(t)).coefs[k]*inv(k))
+		end 
+		return Taylor(U)
+	end 
+	function paso_integracion(u::Taylor, ϵ)
+		P  = length(u)
+		uₚ = u.coefs[P]
+		δt = (ϵ*abs(inv(uₚ)))^(inv(P-1))*inv(2)
+		uₚ₋₁ = u.coefs[P-1]
+		δt2 = (ϵ*abs(inv(uₚ₋₁))^(inv(P-1)))*inv(2)
+		return min(δt,δt2)
+	end 
 end 
