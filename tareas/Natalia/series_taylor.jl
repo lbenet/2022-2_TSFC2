@@ -2,7 +2,7 @@
 module SeriesTaylor
 
 import Base: ==, ≈, +, -, *, /, ^, one, zero, inv, sqrt, exp, log, sin, cos, tan, asin, acos, atan
-export Taylor, evaluar, coefs_taylor, paso_integracion
+export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 
 	"""
 	Taylor.
@@ -348,51 +348,160 @@ export Taylor, evaluar, coefs_taylor, paso_integracion
 		end 
 		return Taylor(P)
 	end
+
 	#RAIZ
+
 	function sqrt(f::Taylor) 
 		return f^(1/2)
 	end 
-	#-----------------------------------------------------#
 
 	# TAREA 3
-
+	
 	"""
-	evaluar. 
+	evaluar(fT, h)
 
-	Evalua objetos del tipo `Taylor` en un valor específico, usando el método de Horner.
-	EL parámetro `fT::Taylor` es el desarrollo de Taylor de una función f(x)
-	alrededor del punto x₀. Como resultado no da evaluación numérica de f(x₀+h).
+	Evalua objetos del tipo Taylor en un valor específico, usando el método de Horner.
+	EL parámetro fT::Taylor es el desarrollo de Taylor de una función f(u)
+	alrededor del punto u₀. Como resultado no da evaluación numérica de f(u₀+h).
 
-	x(t₁)= x₀ + h(x₁ + h(... + h(xₚ₋₁ + hxₚ))...)
+	u(t₁)= u₀ + h(u₁ + h(... + h(uₚ₋₁ + huₚ))...)
 
 	"""
 	function evaluar(fT::Taylor, h)
-		P = length(fT.coefs)  
-		xₚ₋₁ = fT.coefs[P-1]
-		xₚ = fT.coefs[P]
-		S₀ = xₚ₋₁ + h*xₚ
-		S = S₀ 
-		for k in P-2:-1:1 
-			S = fT.coefs[k] + h*S
-    	end
+    	P = length(fT.coefs)  
+    	uₚ₋₁ = fT.coefs[P-1]
+    	uₚ = fT.coefs[P]
+    	S₀ = uₚ₋₁ + h*uₚ
+    	S = S₀ 
+    	for k in P-2:-1:1 
+        	S = fT.coefs[k] + h*S
+    	end 
     	return S
 	end
+
+	"""
+	Caso escalar.
+	coefs_taylor(f, t, u, p).
+
+	Calcula los coeficientes uₖ de la expansión de Taylor para la variable dependiente
+	en términos de la independiente, regresando un objeto tipo `Taylor`. 
+	Los argumentos de esta función son la función f que define a la ecuación diferencial 
+	(con la convención de que los argumentos de f son f(x, p, t)), la variable independiente t::Taylor, 
+	la variable dependiente u::Taylor y p representa cualquier parámetros necesarios que
+	se necesite en la función f.
+	"""
 	function coefs_taylor(f, t::Taylor, u::Taylor, p)
-		P = length(u.coefs)
+		P  = length(u.coefs)
 		u₀ = u.coefs[1]
-		t = t.coefs
-		U = [u₀]
+		U  = [u₀]
 		for k in 1:P-1
-			append!(U,f(Taylor(U), p, Taylor(t)).coefs[k]*inv(k))
+			fT= f(Taylor(U), p, t)
+			append!(U,fT.coefs[k]*inv(k))
 		end 
 		return Taylor(U)
 	end 
+
+	"""
+	Caso escalar.
+	paso_integracion(u, ϵ)
+
+	Se obtiene el paso de integración δ a partir del ϵ dado y de los dos últimos coeficientes uₖ 
+	del desarrollo de Taylor para la variable independiente, multiplicado por 0.5.
+	"""
 	function paso_integracion(u::Taylor, ϵ)
-		P  = length(u)
-		uₚ = u.coefs[P]
-		δt = (ϵ*abs(inv(uₚ)))^(inv(P-1))*inv(2)
-		uₚ₋₁ = u.coefs[P-1]
-		δt2 = (ϵ*abs(inv(uₚ₋₁))^(inv(P-1)))*inv(2)
-		return min(δt,δt2)
+		U = u.coefs
+		P  = length(U)
+		uₚ = U[P]
+		δt1 = 0.5*(ϵ/abs(uₚ))^(inv(P-1))
+		uₚ₋₁ = U[P-1]
+		δt2 = 0.5*(ϵ/abs(uₚ₋₁))^(inv(P-2))
+		δt = min(δt1,δt2)
+		return δt
+	end 
+	
+	"""
+	Caso escalar. 
+	paso_taylor(f, t, u, p, ϵ)
+
+	Calcula un paso de taylor usando coefs_taylor y paso_integracion. 
+	Devuelve un objeto tipo Taylor (uₚ) y el paso de integración δt
+	"""
+	function paso_taylor(f,t::Taylor,u::Taylor, p, ϵ)
+		uₚ = coefs_taylor(f,t,u,p)
+		δt = paso_integracion(uₚ, ϵ)
+		return uₚ, δt
+	end 
+
+	"""
+	Caso escalar.
+	integracion_taylor(f, u₀, ti, tf, orden, ϵ, p)
+	
+	Se implementa el método de Taylor para integrar desde ti (tiempo inicial) 
+	hasta tf (tiempo final), o al reves si tf < ti, la ecuación diferencial definida por f.
+	Los argumentos de esta función son la función f, la condición inicial u₀, 
+	ti, tf, el orden para los desarrollos de Taylor, la tolerancia absoluta ϵ, 
+	y los parámetros p necesarios para definir la ecuación diferencial.
+	Devuelve un vector con los tiempos calculados a cada paso de integración y 
+	un vector con la variable dependiente obtenida de la integración.
+	"""
+	function integracion_taylor(f, u₀, ti, tf, orden, ϵ, p)
+		cᵢ = 10^(-15) 
+
+		# MÉTODO 1 "HACIA ADELANTE"
+		if ti < tf
+			U = [u₀]
+        	T = [ti]
+        	while ti < tf
+            	u = Taylor(orden)
+            	u.coefs[1] = u₀
+            	t = Taylor(orden) + ti
+            	u, δt = paso_taylor(f, t, u, p, ϵ)
+            	tₖ = ti + δt      
+            	if  tf < tₖ
+                	h = tf - ti
+					Uₖ = evaluar(u, h)
+                	append!(U, Uₖ)
+					append!(T, tf) 
+            	elseif δt ≥ cᵢ 
+					h = δt
+					Uₖ = evaluar(u, h)
+                	append!(U, Uₖ) 
+					append!(T, tₖ)
+            	else 
+                	break
+            	end
+            	ti = T[end] 
+            	u₀ = U[end]
+        	end 
+        	return T, U
+
+		# MÉTODO 2. "HACIA ATRÁS"
+		else 
+			U = [u₀]
+        	T = [ti]
+        	while ti > tf
+            	u = Taylor(orden)
+            	u.coefs[1] = u₀
+            	t = Taylor(orden) + ti
+            	u, δt = paso_taylor(f, t, u, p, ϵ)
+            	tₖ = ti - δt   
+            	if tf > tₖ
+                	h = tf - ti
+					Uₖ = evaluar(u, h)
+					append!(U, Uₖ)
+					append!(T, tf)
+           		elseif δt ≥ cᵢ
+					h = -δt
+					Uₖ = evaluar(u, h)
+                	append!(U, Uₖ)
+					append!(T, tₖ)
+            	else
+                	break
+            	end
+				ti = T[end] 
+            	u₀ = U[end]
+        	end
+        	return T, U
+		end
 	end 
 end 
