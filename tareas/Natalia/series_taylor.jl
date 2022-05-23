@@ -8,9 +8,9 @@ export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 	Taylor.
 	
 	Estructura paramétrica (`struct`) que define el tipo `Taylor{T}`, 
-    donde el parámetro es un subtipo de `Number`. Además, el tipo `Taylor`
-    es a su vez subtipo de `Number`. El campo básico de esta estructura
-    es un vector `coefs` del tipo `Vector{T}`.
+    	donde el parámetro es un subtipo de `Number`. Además, el tipo `Taylor`
+    	es a su vez subtipo de `Number`. El campo básico de esta estructura
+    	es un vector `coefs` del tipo `Vector{T}`.
 
 	"""
 	struct Taylor{T <: Number} <: Number
@@ -115,7 +115,7 @@ export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 			for i in 0:k-1
 				suma = suma + f.coefs[i+1]*g.coefs[k-i]
 			end
-		 P[k] = suma 
+		P[k] = suma 
 		end
 		return Taylor(P)
 	end
@@ -127,7 +127,7 @@ export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 	function /(f::Taylor, g::Taylor)
 		g₀ = g.coefs[1]
 		@assert g₀ ≠ 0
-        f₀ = f.coefs[1]
+        	f₀ = f.coefs[1]
 		l1 =  length(f.coefs)
 		l2 =  length(g.coefs)
 		minimo = min(l1,l2)
@@ -283,7 +283,7 @@ export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 	"""
 	Arctan.
 	Es aplicada a un objeto tipo `Taylor` usando la formula: 
-    tan⁻¹(z) = 0.5iln((1-iz)/(1+iz))
+    	tan⁻¹(z) = 0.5iln((1-iz)/(1+iz))
 	"""
 	function atan(f::Taylor)
 		N = 1-im*f
@@ -368,15 +368,15 @@ export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 
 	"""
 	function evaluar(fT::Taylor, h)
-    	P = length(fT.coefs)  
-    	uₚ₋₁ = fT.coefs[P-1]
-    	uₚ = fT.coefs[P]
-    	S₀ = uₚ₋₁ + h*uₚ
-    	S = S₀ 
-    	for k in P-2:-1:1 
-        	S = fT.coefs[k] + h*S
-    	end 
-    	return S
+    		P = length(fT.coefs)  
+    		uₚ₋₁ = fT.coefs[P-1]
+    		uₚ = fT.coefs[P]
+    		S₀ = uₚ₋₁ + h*uₚ
+    		S = S₀ 
+    		for k in P-2:-1:1 
+        		S = fT.coefs[k] + h*S
+    		end 
+    		return S
 	end
 
 	"""
@@ -450,58 +450,58 @@ export Taylor, evaluar, coefs_taylor, paso_integracion, integracion_taylor
 		# MÉTODO 1 "HACIA ADELANTE"
 		if ti < tf
 			U = [u₀]
-        	T = [ti]
-        	while ti < tf
-            	u = Taylor(orden)
-            	u.coefs[1] = u₀
-            	t = Taylor(orden) + ti
-            	u, δt = paso_taylor(f, t, u, p, ϵ)
-            	tₖ = ti + δt      
-            	if  tf < tₖ
-                	h = tf - ti
+        		T = [ti]
+        		while ti < tf
+            			u = Taylor(orden)
+            			u.coefs[1] = u₀
+            			t = Taylor(orden) + ti
+            			u, δt = paso_taylor(f, t, u, p, ϵ)
+            			tₖ = ti + δt      
+            			if  tf < tₖ
+                			h = tf - ti
 					Uₖ = evaluar(u, h)
-                	append!(U, Uₖ)
+                			append!(U, Uₖ)
 					append!(T, tf) 
-            	elseif δt ≥ cᵢ 
+            			elseif δt ≥ cᵢ 
 					h = δt
 					Uₖ = evaluar(u, h)
-                	append!(U, Uₖ) 
+                			append!(U, Uₖ) 
 					append!(T, tₖ)
-            	else 
-                	break
-            	end
-            	ti = T[end] 
-            	u₀ = U[end]
-        	end 
-        	return T, U
+            			else 
+                			break
+            			end
+            		ti = T[end] 
+            		u₀ = U[end]
+        		end 
+        		return T, U
 
 		# MÉTODO 2. "HACIA ATRÁS"
 		else 
 			U = [u₀]
-        	T = [ti]
-        	while ti > tf
-            	u = Taylor(orden)
-            	u.coefs[1] = u₀
-            	t = Taylor(orden) + ti
-            	u, δt = paso_taylor(f, t, u, p, ϵ)
-            	tₖ = ti - δt   
-            	if tf > tₖ
-                	h = tf - ti
+        		T = [ti]
+        		while ti > tf
+            			u = Taylor(orden)
+            			u.coefs[1] = u₀
+            			t = Taylor(orden) + ti
+            			u, δt = paso_taylor(f, t, u, p, ϵ)
+            			tₖ = ti - δt   
+            			if tf > tₖ
+                			h = tf - ti
 					Uₖ = evaluar(u, h)
 					append!(U, Uₖ)
 					append!(T, tf)
-           		elseif δt ≥ cᵢ
+           			elseif δt ≥ cᵢ
 					h = -δt
 					Uₖ = evaluar(u, h)
-                	append!(U, Uₖ)
+                			append!(U, Uₖ)
 					append!(T, tₖ)
-            	else
-                	break
-            	end
-				ti = T[end] 
-            	u₀ = U[end]
-        	end
-        	return T, U
+            			else
+                			break
+            			end
+			ti = T[end] 
+            		u₀ = U[end]
+        		end
+        		return T, U
 		end
 	end 
 end 
