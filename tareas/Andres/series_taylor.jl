@@ -291,7 +291,7 @@ import Base: atan
 		return Taylor(At)
 	end
 
-### Taylor applications
+### Taylor application
 
 function evaluar(T::Taylor, h::Real)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h) Export!
 	coefs = T.coefs
@@ -302,7 +302,7 @@ function evaluar(T::Taylor, h::Real)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h) 
 	return b₀
 end
 
-### Scalar case
+### Scalar case methods
 
 function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T}
 	l = length(t.coefs)   ### order
@@ -315,7 +315,7 @@ function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T}
 	return Taylor(C)
 end
 
-function paso_integracion(U, ϵ)
+function paso_integracion(U::Taylor, ϵ)   ### 1st method (scalar)
 	u = U.coefs
 	orden = length(u)-1
 	δₜ = (ϵ/abs(u[end]))^(1/orden)
@@ -329,7 +329,7 @@ function paso_taylor(f, t::Taylor, u::Taylor, p, ϵ)
 	return δ, xₖ
 end
 
-function integracion_taylor_f(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+function i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)   ### 1st method (scalar)
 	ts = [t₀];   xs = [x₀]
 	while ts[end] < tₖ
 		t = Taylor(T, order)+ts[end]
@@ -349,7 +349,7 @@ function integracion_taylor_f(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where 
 	return ts, xs
 end
 
-function integracion_taylor_b(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+function i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)   ### 1st method (scalar)
 	ts = [t₀];   xs = [x₀]
 	while tₖ < ts[end]
 		t = Taylor(T, order)+ts[end]
@@ -369,14 +369,85 @@ function integracion_taylor_b(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where 
 	return ts, xs
 end
 	
-function integracion_taylor(f, x₀, t₀, tₖ, order, ϵ, p)
-	if t₀ < tₖ
-		return integracion_taylor_f(f, x₀, t₀, tₖ, order, ϵ, p)
+function integracion_taylor(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+	if t₀ < tₖ                              ### tol, parameter(s)  1st method (scalar)
+		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
 	else
-		return integracion_taylor_b(f, x₀, t₀, tₖ, order, ϵ, p)
+		return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
 	end
 end
 
 ### Vectorial case
 
+function coefs_taylor!(f, t, u, du, p)
+	eqs = length(u);   ord = length(t.coefs)
+	f(du, u, p, t)   ### 1st iteration
+	for c in 2:ord   ### iterations 2 and forward
+		f(du, u, p, t)   ### updating du
+		for eq in 1:eqs
+			u[eq].coefs[c] = du[eq].coefs[c-1]/(c-1)   ### updating u
+		end
+	end
+	return u
+end
+
+function paso_integracion(U::Vector{Taylor{T}}, ϵ) where {T<:Real}
+	l = length(U)
+	hs = zeros(T, l)
+	for i in 1:l
+		u = U[i].coefs
+		ord = length(u)-1
+		δₜ = (ϵ/abs(u[end]))^(1/ord)
+		δₜ₋₁ = (ϵ/abs(u[end-1]))^(1/(ord-1))
+		hs[i] = min(δₜ, δₜ₋₁)
+	end
+	return minimum(hs)*0.5
+end
+
+function paso_taylor!(f, t, u, du, p, ϵ)
+	coefs_taylor!(f, t, u, du, p)   ### Here 'u' it's already been updated
+	δ = paso_integracion(u, ϵ)
+	return δ
+end
+
+function i_t_forward(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
+	ts = [t₀]
+	eqs = length(x₀)
+	xyz = [Taylor(order)+x₀[eq] for eq in 1:eqs]
+	dxyz = similar(xyz)
+	sols = [zeros(1) for _ in 1:eqs]
+	for eq in 1:eqs
+		sols[eq][1] = x₀[eq]
+	end
+	while ts[end] < tₖ
+		t = Taylor(order)+ts[end]
+		δ = paso_taylor!(f, t, xyz, dxyz, p, ϵ)
+		mb = 1.e-10
+		nt = ts[end] + δ   ### nt: new time t
+		if tₖ < nt
+			for eq in 1:eqs
+				push!(sols[eq], evaluar(xyz[eq], tₖ-ts[end]))
+			end
+			push!(ts, tₖ)
+		elseif δ ≥ mb
+			push!(ts, nt)
+			for eq in 1:eqs
+				push!(sols[eq], evaluar(xyz[eq], δ))
+			end
+		else
+			break
+		end
+	end
+	
+	return ts, sols
+end
+
+function integracion_taylor(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
+	if t₀ < tₖ   ### 2nd method (vectorial)
+		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
+	#else
+		#return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
+	end
+end
+	
 end
