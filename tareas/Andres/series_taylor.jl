@@ -329,7 +329,7 @@ function paso_taylor(f, t::Taylor, u::Taylor, p, ϵ)
 	return δ, xₖ
 end
 
-function i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)   ### 1st method (scalar)
+function i_t_forward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st method (scalar)
 	ts = [t₀];   xs = [x₀]
 	while ts[end] < tₖ
 		t = Taylor(T, order)+ts[end]
@@ -349,7 +349,7 @@ function i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)   ### 1st method (scalar
 	return ts, xs
 end
 
-function i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)   ### 1st method (scalar)
+function i_t_backward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st method (scalar)
 	ts = [t₀];   xs = [x₀]
 	while tₖ < ts[end]
 		t = Taylor(T, order)+ts[end]
