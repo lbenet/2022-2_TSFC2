@@ -415,31 +415,28 @@ function i_t_forward(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
 	eqs = length(x₀)
 	xyz = [Taylor(order)+x₀[eq] for eq in 1:eqs]
 	dxyz = similar(xyz)
-	sols = [zeros(1) for _ in 1:eqs]
-	for eq in 1:eqs
-		sols[eq][1] = x₀[eq]
-	end
+	solucs = [x₀]
 	while ts[end] < tₖ
 		t = Taylor(order)+ts[end]
 		δ = paso_taylor!(f, t, xyz, dxyz, p, ϵ)
-		mb = 1.e-10
 		nt = ts[end] + δ   ### nt: new time t
+		sols = zeros(eqs)
 		if tₖ < nt
 			for eq in 1:eqs
-				push!(sols[eq], evaluar(xyz[eq], tₖ-ts[end]))
+				sols[eq] = evaluar(xyz[eq], tₖ-ts[end])
 			end
 			push!(ts, tₖ)
-		elseif δ ≥ mb
+		elseif δ ≥ 1.e-10
 			push!(ts, nt)
 			for eq in 1:eqs
-				push!(sols[eq], evaluar(xyz[eq], δ))
+				sols[eq] = evaluar(xyz[eq], δ)
 			end
 		else
 			break
 		end
+		push!(solucs, sols)
 	end
-	
-	return ts, sols
+	return ts, solucs
 end
 
 function integracion_taylor(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
