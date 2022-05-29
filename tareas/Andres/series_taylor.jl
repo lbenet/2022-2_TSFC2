@@ -333,7 +333,7 @@ function i_t_forward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st m
 	ts = [t₀];   xs = [x₀]
 	while ts[end] < tₖ
 		t = Taylor(T, order)+ts[end]
-		u = Taylor(T, order);   u.coefs[1] = xs[end]
+		u = Taylor(T, order) + xs[end]#;   u.coefs[1] = xs[end]
 		δ, u = paso_taylor(f, t, u, p, ϵ);   mb = 1.e-10   ### mb: minimum bound t
 		nt = ts[end]+δ   ### nt: new t
 		if tₖ < nt
@@ -353,7 +353,7 @@ function i_t_backward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st 
 	ts = [t₀];   xs = [x₀]
 	while tₖ < ts[end]
 		t = Taylor(T, order)+ts[end]
-		u = Taylor(T, order);   u.coefs[1] = xs[end]
+		u = Taylor(T, order) + xs[end]#;   u.coefs[1] = xs[end]
 		δ, u = paso_taylor(f, t, u, p, ϵ);   mb = 1.e-10   ### mb: minimum bound t
 		nt = ts[end]-δ   ### nt: new t
 		if nt < tₖ
@@ -410,14 +410,21 @@ function paso_taylor!(f, t, u, du, p, ϵ)
 	return δ
 end
 
-function i_t_forward(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
-	ts = [t₀]
+function i_t_forward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T}
+	ts = [t₀]   ### Vectorial method
 	eqs = length(x₀)
-	xyz = [Taylor(order)+x₀[eq] for eq in 1:eqs]
+	xyz = [Taylor(1) for _ in 1:eqs]
+	for eq in 1:eqs
+		xyz[eq] = Taylor(T, order)+x₀[eq]
+	end
 	dxyz = similar(xyz)
 	solucs = [x₀]
 	while ts[end] < tₖ
 		t = Taylor(order)+ts[end]
+		xyz = [Taylor(1) for _ in 1:eqs]
+		for eq in 1:eqs
+			xyz[eq] = Taylor(T, order) + solucs[end][eq]
+		end
 		δ = paso_taylor!(f, t, xyz, dxyz, p, ϵ)
 		nt = ts[end] + δ   ### nt: new time t
 		sols = zeros(eqs)
@@ -438,12 +445,47 @@ function i_t_forward(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
 	end
 	return ts, solucs
 end
+function i_t_backward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T}
+	ts = [t₀]   ### Vectorial method
+	eqs = length(x₀)
+	xyz = [Taylor(1) for _ in 1:eqs]
+	for eq in 1:eqs
+		xyz[eq] = Taylor(T, order)+x₀[eq]
+	end
+	dxyz = similar(xyz)
+	solucs = [x₀]
+	while tₖ < ts[end]
+		t = Taylor(order)+ts[end]
+		xyz = [Taylor(1) for _ in 1:eqs]
+		for eq in 1:eqs
+			xyz[eq] = Taylor(T, order) + solucs[end][eq]
+		end
+		δ = paso_taylor!(f, t, xyz, dxyz, p, ϵ)
+		nt = ts[end] - δ   ### nt: new time t
+		sols = zeros(eqs)
+		if nt < tₖ
+			for eq in 1:eqs
+				sols[eq] = evaluar(xyz[eq], tₖ-ts[end])
+			end
+			push!(ts, tₖ)
+		elseif δ ≥ 1.e-10
+			push!(ts, nt)
+			for eq in 1:eqs
+				sols[eq] = evaluar(xyz[eq], -δ)
+			end
+		else
+			break
+		end
+		push!(solucs, sols)
+	end
+	return ts, solucs
+end
 
-function integracion_taylor(f, x₀::Vector, t₀, tₖ, order, ϵ, p)
-	if t₀ < tₖ   ### 2nd method (vectorial)
+function integracion_taylor(f, x₀::Vector{T}, t₀::T, tₖ::T, order, ϵ, p) where {T}
+	if t₀ < tₖ   ### Vectorial method
 		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
-	#else
-		#return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
+	else
+		return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
 	end
 end
 	
