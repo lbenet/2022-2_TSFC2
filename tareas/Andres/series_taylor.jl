@@ -293,7 +293,7 @@ import Base: atan
 
 ### Taylor application
 
-function evaluar(T::Taylor, h::Real)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h) Export!
+function evaluar(T::Taylor, h)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h)   # Export!
 	coefs = T.coefs
 	b₀ = coefs[end-1] + coefs[end]*h   ### Horner's algorithm
 	for c in 2:length(coefs)-1
@@ -302,9 +302,9 @@ function evaluar(T::Taylor, h::Real)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h) 
 	return b₀
 end
 
-### Scalar case methods
+### Scalar case
 
-function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T}
+function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T<:Real}
 	l = length(t.coefs)   ### order
 	C = zeros(T, l)   ### T to assure same type
 	ts = t.coefs
@@ -315,7 +315,7 @@ function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T}
 	return Taylor(C)
 end
 
-function paso_integracion(U::Taylor, ϵ)   ### 1st method (scalar)
+function paso_integracion(U::Taylor, ϵ)   ### Scalar method
 	u = U.coefs
 	orden = length(u)-1
 	δₜ = (ϵ/abs(u[end]))^(1/orden)
@@ -328,18 +328,18 @@ function paso_taylor(f, t::Taylor, u::Taylor, p, ϵ)
 	δ = paso_integracion(xₖ, ϵ)
 	return δ, xₖ
 end
-
-function i_t_forward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st method (scalar)
+				 ### Scalar method
+function i_t_forward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T<:Real}
 	ts = [t₀];   xs = [x₀]
 	while ts[end] < tₖ
-		t = Taylor(T, order)+ts[end]
-		u = Taylor(T, order) + xs[end]#;   u.coefs[1] = xs[end]
-		δ, u = paso_taylor(f, t, u, p, ϵ);   mb = 1.e-10   ### mb: minimum bound t
+		t = Taylor(T, order) + ts[end]
+		u = Taylor(T, order) + xs[end]
+		δ, u = paso_taylor(f, t, u, p, ϵ)
 		nt = ts[end]+δ   ### nt: new t
 		if tₖ < nt
 			push!(xs, evaluar(u, tₖ-ts[end]))
 			push!(ts, tₖ)
-		elseif δ ≥ mb
+		elseif δ ≥ 1.e-10
 			push!(ts, nt)
 			push!(xs, evaluar(u, δ))
 		else
@@ -347,19 +347,18 @@ function i_t_forward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st m
 		end
 	end
 	return ts, xs
-end
-
-function i_t_backward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st method (scalar)
+end 				### Scalar method
+function i_t_backward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T<:Real}
 	ts = [t₀];   xs = [x₀]
 	while tₖ < ts[end]
-		t = Taylor(T, order)+ts[end]
-		u = Taylor(T, order) + xs[end]#;   u.coefs[1] = xs[end]
-		δ, u = paso_taylor(f, t, u, p, ϵ);   mb = 1.e-10   ### mb: minimum bound t
-		nt = ts[end]-δ   ### nt: new t
+		t = Taylor(T, order) + ts[end]
+		u = Taylor(T, order) + xs[end]
+		δ, u = paso_taylor(f, t, u, p, ϵ)
+		nt = ts[end] - δ   ### nt: new t
 		if nt < tₖ
 			push!(xs, evaluar(u, tₖ-ts[end]))
 			push!(ts, tₖ)
-		elseif δ ≥ mb
+		elseif δ ≥ 1.e-10
 			push!(ts, nt)
 			push!(xs, evaluar(u, -δ))
 		else
@@ -368,9 +367,9 @@ function i_t_backward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T}   ### 1st 
 	end
 	return ts, xs
 end
-	
+						### Scalar method
 function integracion_taylor(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
-	if t₀ < tₖ                              ### tol, parameter(s)  1st method (scalar)
+	if t₀ < tₖ 										 ### tol, parameter(s)
 		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
 	else
 		return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
@@ -390,7 +389,7 @@ function coefs_taylor!(f, t, u, du, p)
 	end
 	return u
 end
-
+						  ### Vectorial method
 function paso_integracion(U::Vector{Taylor{T}}, ϵ) where {T<:Real}
 	l = length(U)
 	hs = zeros(T, l)
@@ -401,7 +400,7 @@ function paso_integracion(U::Vector{Taylor{T}}, ϵ) where {T<:Real}
 		δₜ₋₁ = (ϵ/abs(u[end-1]))^(1/(ord-1))
 		hs[i] = min(δₜ, δₜ₋₁)
 	end
-	return minimum(hs)*0.5
+	return minimum(hs)*0.25
 end
 
 function paso_taylor!(f, t, u, du, p, ϵ)
@@ -409,25 +408,19 @@ function paso_taylor!(f, t, u, du, p, ϵ)
 	δ = paso_integracion(u, ϵ)
 	return δ
 end
-
-function i_t_forward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T}
-	ts = [t₀]   ### Vectorial method
+				   ### Vectorial method
+function i_t_forward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T<:Real}
+	ts = [t₀]
 	eqs = length(x₀)
-	xyz = [Taylor(1) for _ in 1:eqs]
-	for eq in 1:eqs
-		xyz[eq] = Taylor(T, order)+x₀[eq]
-	end
+	xyz = [Taylor(T, order) + x₀[eq] for eq in 1:eqs]
 	dxyz = similar(xyz)
 	solucs = [x₀]
 	while ts[end] < tₖ
-		t = Taylor(order)+ts[end]
-		xyz = [Taylor(1) for _ in 1:eqs]
-		for eq in 1:eqs
-			xyz[eq] = Taylor(T, order) + solucs[end][eq]
-		end
+		t = Taylor(T, order) + ts[end]
+		xyz = [Taylor(T, order) + solucs[end][eq] for eq in 1:eqs]
 		δ = paso_taylor!(f, t, xyz, dxyz, p, ϵ)
 		nt = ts[end] + δ   ### nt: new time t
-		sols = zeros(eqs)
+		sols = zeros(T, eqs)
 		if tₖ < nt
 			for eq in 1:eqs
 				sols[eq] = evaluar(xyz[eq], tₖ-ts[end])
@@ -444,25 +437,19 @@ function i_t_forward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T}
 		push!(solucs, sols)
 	end
 	return ts, solucs
-end
-function i_t_backward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T}
-	ts = [t₀]   ### Vectorial method
+end 				### Vectorial method
+function i_t_backward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T<:Real}
+	ts = [t₀]
 	eqs = length(x₀)
-	xyz = [Taylor(1) for _ in 1:eqs]
-	for eq in 1:eqs
-		xyz[eq] = Taylor(T, order)+x₀[eq]
-	end
+	xyz = [Taylor(T, order) + x₀[eq] for eq in 1:eqs]
 	dxyz = similar(xyz)
 	solucs = [x₀]
 	while tₖ < ts[end]
-		t = Taylor(order)+ts[end]
-		xyz = [Taylor(1) for _ in 1:eqs]
-		for eq in 1:eqs
-			xyz[eq] = Taylor(T, order) + solucs[end][eq]
-		end
+		t = Taylor(T, order)+ts[end]
+		xyz = [Taylor(T, order) + solucs[end][eq] for eq in 1:eqs]
 		δ = paso_taylor!(f, t, xyz, dxyz, p, ϵ)
 		nt = ts[end] - δ   ### nt: new time t
-		sols = zeros(eqs)
+		sols = zeros(T, eqs)
 		if nt < tₖ
 			for eq in 1:eqs
 				sols[eq] = evaluar(xyz[eq], tₖ-ts[end])
@@ -480,9 +467,9 @@ function i_t_backward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T}
 	end
 	return ts, solucs
 end
-
-function integracion_taylor(f, x₀::Vector{T}, t₀::T, tₖ::T, order, ϵ, p) where {T}
-	if t₀ < tₖ   ### Vectorial method
+						  ### Vectorial method
+function integracion_taylor(f, x₀::Vector{T}, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+	if t₀ < tₖ
 		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
 	else
 		return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
