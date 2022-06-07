@@ -120,32 +120,13 @@ import Base: ^
 	function ^(T::Taylor, r::Union{Float64, Int64})
 		l = length(T.coefs)
 		P = zeros(typeof(T.coefs[1]), l)
-		if r%1 == 0   ### Integer case (mathematically)
-			if r == 2   ### T^2 case
-				P[1] = T.coefs[1]^2
-				for k in 2:l
-					Σ = 0
-					if k%2 == 0
-						for j in 0:(k-2)/2
-							Σ += T.coefs[Int(j)+1]*T.coefs[k-Int(j)]
-						end
-						P[k] = 2Σ
-					else
-						for j in 0:(k-3)/2
-							Σ += T.coefs[Int(j)+1]*T.coefs[k-Int(j)]
-						end
-						P[k] = T.coefs[Int((k+1)/2)]^2 + 2Σ   ### index trick!
-					end
-				end
-				return Taylor(P)
-			else   ### T^n  n∈N  case
-				P = T
-				for p in 2:r
-					P = P*T   ### Doing the product r times
-				end
-				return P
+		if r%1 == 0   ### Integer case
+			TT = T
+			for p in 2:r
+				TT *= T
 			end
-		else   ### Rational case (mathematically)
+			return TT
+		else   ### Rational case
 			if r == 1/2
 				@assert T.coefs[1] > 0
 				P[1] = sqrt(T.coefs[1])
@@ -291,9 +272,8 @@ import Base: atan
 		return Taylor(At)
 	end
 
-### Taylor application
-
-function evaluar(T::Taylor, h)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h)   # Export!
+### Getting the Taylor coefficients
+function evaluar(T::Taylor, h::Float64)   ### f(x) ≡ Taylor ⇒ f(x₀) ≡ f(h)   # Export!
 	coefs = T.coefs
 	b₀ = coefs[end-1] + coefs[end]*h   ### Horner's algorithm
 	for c in 2:length(coefs)-1
@@ -315,15 +295,15 @@ function coefs_taylor(f, t::Taylor{T}, u::Taylor{T}, p) where {T<:Real}
 	return Taylor(C)
 end
 
-function paso_integracion(U::Taylor, ϵ)   ### Scalar method
+function paso_integracion(U::Taylor{T}, ϵ) where {T<:Real}   ### Scalar method
 	u = U.coefs
 	orden = length(u)-1
 	δₜ = (ϵ/abs(u[end]))^(1/orden)
 	δₜ₋₁ = (ϵ/abs(u[end-1]))^(1/(orden-1))
-	return min(δₜ, δₜ₋₁)*0.5
+	return min(δₜ, δₜ₋₁)
 end
 
-function paso_taylor(f, t::Taylor, u::Taylor, p, ϵ)
+function paso_taylor(f, t::Taylor{T}, u::Taylor{T}, p, ϵ) where {T<:Real}
 	xₖ = coefs_taylor(f, t, u, p)
 	δ = paso_integracion(xₖ, ϵ)
 	return δ, xₖ
@@ -335,7 +315,7 @@ function i_t_forward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T<:Real}
 		t = Taylor(T, order) + ts[end]
 		u = Taylor(T, order) + xs[end]
 		δ, u = paso_taylor(f, t, u, p, ϵ)
-		nt = ts[end]+δ   ### nt: new t
+		nt = ts[end] + δ   ### nt: new t
 		if tₖ < nt
 			push!(xs, evaluar(u, tₖ-ts[end]))
 			push!(ts, tₖ)
@@ -368,8 +348,8 @@ function i_t_backward(f, x₀::T, t₀, tₖ, order, ϵ, p) where {T<:Real}
 	return ts, xs
 end
 						### Scalar method
-function integracion_taylor(f, x₀::T, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
-	if t₀ < tₖ 										 ### tol, parameter(s)
+function integracion_taylor(f, x₀::T, t₀::T, tₖ::T, order, ϵ::T, p) where {T<:Real}
+	if t₀ < tₖ 										   ### tol, parameter(s)
 		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
 	else
 		return i_t_backward(f, x₀, t₀, tₖ, order, ϵ, p)
@@ -380,19 +360,18 @@ end
 
 function coefs_taylor!(f, t, u, du, p)
 	eqs = length(u);   ord = length(t.coefs)
-	f(du, u, p, t)   ### 1st iteration
 	for c in 2:ord   ### iterations 2 and forward
-		f(du, u, p, t)   ### updating du
+		f(du, u, p, t)   ### updating 'du'
 		for eq in 1:eqs
-			u[eq].coefs[c] = du[eq].coefs[c-1]/(c-1)   ### updating u
+			u[eq].coefs[c] = du[eq].coefs[c-1]/(c-1)   ### updating 'u'
 		end
 	end
 	return u
 end
 						  ### Vectorial method
-function paso_integracion(U::Vector{Taylor{T}}, ϵ) where {T<:Real}
+function paso_integracion(U::Vector{Taylor{T}}, ϵ) where {T}
 	l = length(U)
-	hs = zeros(T, l)
+	hs = zeros(l)
 	for i in 1:l
 		u = U[i].coefs
 		ord = length(u)-1
@@ -400,7 +379,7 @@ function paso_integracion(U::Vector{Taylor{T}}, ϵ) where {T<:Real}
 		δₜ₋₁ = (ϵ/abs(u[end-1]))^(1/(ord-1))
 		hs[i] = min(δₜ, δₜ₋₁)
 	end
-	return minimum(hs)*0.25
+	return minimum(hs)
 end
 
 function paso_taylor!(f, t, u, du, p, ϵ)
@@ -412,8 +391,7 @@ end
 function i_t_forward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T<:Real}
 	ts = [t₀]
 	eqs = length(x₀)
-	xyz = [Taylor(T, order) + x₀[eq] for eq in 1:eqs]
-	dxyz = similar(xyz)
+	dxyz = [Taylor(T, order) for eq in 1:eqs]
 	solucs = [x₀]
 	while ts[end] < tₖ
 		t = Taylor(T, order) + ts[end]
@@ -441,8 +419,7 @@ end 				### Vectorial method
 function i_t_backward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T<:Real}
 	ts = [t₀]
 	eqs = length(x₀)
-	xyz = [Taylor(T, order) + x₀[eq] for eq in 1:eqs]
-	dxyz = similar(xyz)
+	dxyz = [Taylor(T, order) for eq in 1:eqs]
 	solucs = [x₀]
 	while tₖ < ts[end]
 		t = Taylor(T, order)+ts[end]
@@ -468,7 +445,7 @@ function i_t_backward(f, x₀::Vector{T}, t₀, tₖ, order, ϵ, p) where {T<:Re
 	return ts, solucs
 end
 						  ### Vectorial method
-function integracion_taylor(f, x₀::Vector{T}, t₀::T, tₖ::T, order, ϵ, p) where {T<:Real}
+function integracion_taylor(f, x₀::Vector{T}, t₀::T, tₖ::T, order, ϵ::T, p) where {T}
 	if t₀ < tₖ
 		return i_t_forward(f, x₀, t₀, tₖ, order, ϵ, p)
 	else
